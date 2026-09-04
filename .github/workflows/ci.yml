@@ -21,33 +21,42 @@ jobs:
   lint-and-test:
     name: Lint & Test
     runs-on: ubuntu-latest
-    # Skipped until the project has a package.json; enforced (not advisory) once it does.
-    if: hashFiles('package.json') != ''
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
-
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: ${{ runner.os }}-pnpm-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      # There are no runtime dependencies, so there is nothing to install and
+      # no lockfile to cache. `npm ci` would fail for want of one.
 
       - name: Lint
-        run: pnpm lint
+        run: npm run lint
 
-      - name: Run tests
-        run: pnpm test
+      - name: Build
+        run: npm run build
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      # The end-to-end tests skip themselves when no browser is present, which
+      # would quietly hide a regression here. ubuntu-latest ships Chrome, so
+      # point at it explicitly and fail if it has gone missing.
+      - name: Locate Chrome
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || true)"
+          if [ -z "$CHROME" ]; then
+            echo "::error::No Chrome binary on the runner — the e2e tests would silently skip."
+            exit 1
+          fi
+          echo "CHROME_PATH=$CHROME" >> "$GITHUB_ENV"
+
+      - name: End-to-end tests
+        run: node --test "tests/e2e/*.test.mjs"
+
+      - name: Upload built page
+        uses: actions/upload-artifact@v4
+        with:
+          name: git-quest
+          path: dist/
+          if-no-files-found: error

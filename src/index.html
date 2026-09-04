@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Git Quest</title>
+<meta name="description" content="An interactive git lesson for people who have never run git init, and who now work alongside AI coding agents.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div class="app">
+
+  <header class="hud">
+    <div class="brand">
+      <span class="brand-mark">&#9727;</span>
+      <span>GIT QUEST</span>
+      <span class="brand-sub">version control for the agent era</span>
+    </div>
+
+    <div class="hud-stats">
+      <span class="hud-level" id="hud-level">LVL 1</span>
+      <span class="xp-track"><i class="xp-fill" id="hud-xp-bar"></i></span>
+      <span id="hud-xp-text">0 XP</span>
+      <span class="hud-streak" id="hud-streak">1-day streak</span>
+    </div>
+
+    <nav class="map" id="chapter-map" aria-label="Chapters"></nav>
+
+    <div class="hud-actions">
+      <button class="btn" id="btn-reset" title="Reset this chapter's sandbox">Reset chapter</button>
+    </div>
+  </header>
+
+  <main class="stage" id="stage">
+    <section class="lesson" id="lesson" aria-label="Lesson"></section>
+    <section class="work" id="work" aria-label="Workbench"></section>
+    <aside class="agent-pane" id="agent-pane" aria-label="Agent" hidden></aside>
+  </main>
+
+</div>
+
+<script src="js/git-engine.js"></script>
+<script src="js/commands.js"></script>
+<script src="js/agents.js"></script>
+<script src="js/chapters.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/graph.js"></script>
+<script src="js/terminal.js"></script>
+<script src="js/widgets.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

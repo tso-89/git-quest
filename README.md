@@ -1,106 +1,124 @@
-# {{PROJECT_NAME}}
+# Git Quest
 
-> {{PROJECT_DESCRIPTION}}
+> An interactive git lesson for people who have never run `git init` — and who now work
+> alongside AI coding agents that write code faster than they can read it.
 
 [![CI](https://github.com/org/repo/actions/workflows/ci.yml/badge.svg)](https://github.com/org/repo/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Overview
+## What it is
 
-{{PROJECT_DESCRIPTION}}
+Eleven chapters, each ending in something the learner **does** rather than reads. The right
+half of the screen is a working git sandbox — a real repository model with a working tree,
+a staging area, commits, branches, merges, conflicts and a reflog — driven by a terminal
+that understands a useful slice of `git`, `gh` and a shell.
+
+Nothing is installed. Nothing touches the learner's machine. It is one HTML file.
+
+| # | Chapter | What they do |
+|---|---------|--------------|
+| 00 | The twenty-second undo | Destroy a file, then get it back |
+| 01 | A name you will still want in five years | Pick a username that passes GitHub's rules; open the account |
+| 02 | A folder with a memory | `git init` a folder and make the first commit |
+| 03 | Public, private, and the key you cannot unsee | Sort ten files into commit / keep-out, then write a `.gitignore` |
+| 04 | Getting it onto GitHub | Create the remote, connect it, push |
+| 05 | The loop you will run all day | Split two changes into two commits and push |
+| 06 | The same loop, without typing | Do it again in a simulated GitHub Desktop and VS Code |
+| 07 | Branches, and undoing anything | Branch, merge, revert, then find it in the reflog |
+| 08 | When someone else has been editing | Resolve a real merge conflict by hand |
+| 09 | Git when an agent is typing | Catch an agent doing something its summary omitted |
+| 10 | Write the rules file | Generate `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` and commit it |
+
+Chapters 09 and 10 personalise around the agents the learner picks: **Claude Code**,
+**Claude Desktop**, **Google Antigravity** and **OpenAI Codex**.
 
 ## Quick Start
 
 ```bash
-# Clone
 git clone https://github.com/org/repo.git
 cd repo
 
-# Install dependencies
-{{CMD_INSTALL}}
-
-# Copy environment template and fill in values
-cp .env.example .env
-
-# Run development server
-{{CMD_DEV}}
+# There are no dependencies to install.
+npm run dev          # http://localhost:4173, serving src/ directly
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Or build the single-file version and open it from disk:
 
-## Documentation
-
-| Document                              | Description                        |
-|---------------------------------------|------------------------------------|
-| [Architecture](docs/ARCHITECTURE.md) | System design and component overview |
-| [Coding Style](docs/guides/coding-style.md) | Code conventions and standards |
-| [Testing Guide](docs/guides/testing.md) | How to write and run tests        |
-| [Security Guide](docs/guides/security.md) | Security requirements            |
-| [Git Workflow](docs/guides/git-workflow.md) | Branching, commits, and PR process |
-| [ADRs](docs/ADR/)                    | Architecture Decision Records      |
-| [Contributing](CONTRIBUTING.md)      | How to contribute to this project  |
-| [Changelog](CHANGELOG.md)            | History of notable changes         |
+```bash
+npm run build        # writes dist/index.html
+open dist/index.html
+```
 
 ## Development
 
 ```bash
-{{CMD_DEV}}          # Start dev server with hot reload
-{{CMD_TEST}}         # Run all tests
-{{CMD_TEST}} --watch   # Tests in watch mode
-{{CMD_LINT}}         # Lint code
-{{CMD_FORMAT}}       # Auto-format code
-{{CMD_BUILD}}        # Production build
+npm run dev          # dev server over src/, no build step
+npm run build        # inline everything into dist/
+npm test             # build, then unit + end-to-end tests
+npm run test:unit    # logic only, no browser
+npm run test:e2e     # headless Chrome against dist/index.html
+npm run lint         # syntax check the files Node cannot import
 ```
 
-## AI Agent Setup
+Edit files in `src/` and reload. The browser sources are plain classic scripts, so there is
+no bundler, no transpiler and no watch process.
 
-Project rules live in **[AGENTS.md](AGENTS.md)** — one file, read by every agent.
+`npm test` runs the end-to-end tests in headless Chrome. They skip automatically if no
+Chrome binary is found; set `CHROME_PATH` to point at one.
 
-| Agent | How it picks up the rules |
-|-------|---------------------------|
-| Claude Code | `CLAUDE.md` imports `AGENTS.md`; extras in `.claude/` |
-| Codex | reads `AGENTS.md` directly |
-| OpenCode | reads `AGENTS.md`; config in `opencode.json` |
-| Antigravity | `GEMINI.md`; skills in `.agents/skills/` |
-| Cursor / Windsurf | `.cursorrules` / `.windsurfrules` point at `AGENTS.md` |
-
-Only the agents you selected at deploy time are present. Shared skills live in `skills/`.
-
-```bash
-# Fill in project placeholders (name, stack, commands)
-python3 scripts/bootstrap-ai-project.py
-
-# Check the agent configuration is valid
-python3 scripts/validate-ai-config.py
-
-# Optional: install git pre-commit hooks
-bash scripts/setup-hooks.sh
-```
-
-## Project Structure
+## How it is put together
 
 ```
-.
-├── AGENTS.md           # Shared rules — read by every agent
-├── skills/             # Portable agent skills
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── ADR/            # Architecture decisions
-│   ├── rules/          # Agent-facing rules (style, security, git)
-│   ├── guides/         # Extended human guides
-│   └── tests/          # Test registry
-├── scripts/            # Bootstrap and validation
-├── templates/          # Agent / skill / ADR templates
-└── src/                # Application source
+src/
+├── index.html            # the app shell — header, lesson pane, work pane, agent pane
+├── css/
+│   ├── tokens.css        # palette, type scale, light and dark themes
+│   └── app.css           # layout and components
+└── js/
+    ├── git-engine.js     # the repository model: working tree, index, commits, merges
+    ├── commands.js       # the shell: parsing, git verbs, diffing, output
+    ├── chapters.js       # all eleven chapters — prose, quests and their checks
+    ├── agents.js         # agent facts and the rules-file generator
+    ├── widgets.js        # the non-terminal exercises
+    ├── terminal.js       # terminal UI: input, history, tab completion
+    ├── graph.js          # the commit graph, redrawn after every command
+    ├── progress.js       # XP, streak and completion in localStorage
+    └── app.js            # wiring, rendering, quest evaluation
 ```
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how a keystroke becomes a quest tick,
+and [docs/design/mockups.html](docs/design/mockups.html) for the three design directions
+this was chosen from.
+
+## Deploying
+
+`dist/index.html` is a complete, self-contained page. Serve it from anywhere — GitHub
+Pages, S3, a USB stick. The only external request is the Google Fonts stylesheet, and the
+page falls back to system faces without it.
+
+`dist/artifact.html` is the same page as a body fragment, for hosts that supply their own
+document shell.
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/ARCHITECTURE.md) | How the sandbox, chapters and quest checks fit together |
+| [Design mockups](docs/design/mockups.html) | The three directions, and why this one won |
+| [Test registry](docs/tests/TEST_REGISTRY.md) | The end-to-end tests and what they need |
+| [Coding Style](docs/guides/coding-style.md) | Code conventions |
+| [Git Workflow](docs/guides/git-workflow.md) | Branching, commits, PRs |
+| [ADRs](docs/ADR/) | Architecture Decision Records |
+| [Changelog](CHANGELOG.md) | History of notable changes |
 
 ## Contributing
 
-1. Fork and create a feature branch: `feat/<slug>`
-2. Follow the [Coding Style Guide](docs/guides/coding-style.md)
-3. Ensure all tests pass: `{{CMD_TEST}}`
-4. Open a pull request with a clear description
+Adding a chapter means adding one object to `src/js/chapters.js`: a `setup` that seeds the
+sandbox, some content blocks, and a quest whose steps are checked against engine state
+rather than against the exact command the learner typed. The walkthrough tests in
+`tests/unit/chapters.test.mjs` will hold you to it — every chapter must be provably
+completable, and provably not complete before the learner does the work.
 
 ## License
 
-[MIT](LICENSE) — (c) {{YEAR}}
+[MIT](LICENSE) — (c) 2026

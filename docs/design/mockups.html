@@ -1,0 +1,1127 @@
+<title>Three Ways to Teach Git</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=JetBrains+Mono:wght@400;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap">
+
+<style>
+/* ============================================================
+   FRAME — the pitch document itself.
+   Neutral, cool, printerly. The three direction specimens
+   below carry their own worlds; the frame stays quiet.
+   ============================================================ */
+:root {
+  --paper:      #EDEFF2;
+  --surface:    #FFFFFF;
+  --surface-2:  #F6F7F9;
+  --ink:        #14161A;
+  --ink-2:      #3D444F;
+  --muted:      #6B7480;
+  --rule:       #D3D8DF;
+  --rule-soft:  #E4E8ED;
+  /* git's own vermilion — the subject's real brand colour, used once */
+  --accent:     #F05033;
+  /* diff colours, straight from the thing we are teaching */
+  --add:        #1A7F37;
+  --add-bg:     #E6F6EA;
+  --del:        #CF222E;
+  --del-bg:     #FDECEC;
+  --shadow:     0 1px 2px rgba(20,22,26,.06), 0 8px 24px -12px rgba(20,22,26,.18);
+
+  --display: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --measure: 66ch;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:     #101216;
+    --surface:   #181B21;
+    --surface-2: #1F232B;
+    --ink:       #EDEFF2;
+    --ink-2:     #C3C9D2;
+    --muted:     #8B939F;
+    --rule:      #2C313A;
+    --rule-soft: #23272F;
+    --accent:    #FF7355;
+    --add:       #3FB950;
+    --add-bg:    #10261A;
+    --del:       #F85149;
+    --del-bg:    #2B1416;
+    --shadow:    0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"] {
+  --paper:     #101216;
+  --surface:   #181B21;
+  --surface-2: #1F232B;
+  --ink:       #EDEFF2;
+  --ink-2:     #C3C9D2;
+  --muted:     #8B939F;
+  --rule:      #2C313A;
+  --rule-soft: #23272F;
+  --accent:    #FF7355;
+  --add:       #3FB950;
+  --add-bg:    #10261A;
+  --del:       #F85149;
+  --del-bg:    #2B1416;
+  --shadow:    0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+
+/* ---------- masthead ---------- */
+.masthead { padding: 56px 0 32px; border-bottom: 1px solid var(--rule); }
+.kicker {
+  font-family: var(--mono); font-size: 11.5px; font-weight: 500;
+  letter-spacing: .13em; text-transform: uppercase; color: var(--muted);
+  display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap;
+}
+.kicker b { color: var(--accent); font-weight: 600; }
+h1 {
+  font-family: var(--display); font-weight: 400;
+  font-size: clamp(42px, 7vw, 76px); line-height: .98; letter-spacing: -.015em;
+  margin: 18px 0 0; text-wrap: balance; max-width: 16ch;
+}
+h1 em { font-style: italic; color: var(--accent); }
+.standfirst {
+  max-width: var(--measure); margin: 20px 0 0;
+  font-size: 18px; line-height: 1.55; color: var(--ink-2);
+}
+.meta-row {
+  display: flex; flex-wrap: wrap; gap: 0; margin-top: 34px;
+  border-top: 1px solid var(--rule-soft);
+}
+.meta {
+  flex: 1 1 200px; padding: 14px 20px 14px 0; border-right: 1px solid var(--rule-soft);
+}
+.meta:last-child { border-right: 0; }
+.meta dt {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted); margin: 0 0 4px;
+}
+.meta dd { margin: 0; font-size: 14.5px; color: var(--ink); }
+
+/* ---------- sticky jump nav ---------- */
+.jump {
+  position: sticky; top: 0; z-index: 40;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--rule);
+}
+.jump-inner {
+  max-width: 1080px; margin: 0 auto; padding: 0 28px;
+  display: flex; gap: 4px; align-items: center; overflow-x: auto;
+}
+.jump a {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  padding: 13px 12px; white-space: nowrap; border-bottom: 2px solid transparent;
+}
+.jump a:hover { color: var(--ink); border-bottom-color: var(--rule); }
+.jump a.is-here { color: var(--ink); border-bottom-color: var(--accent); }
+
+/* ---------- generic section ---------- */
+section { padding: 64px 0; border-bottom: 1px solid var(--rule); }
+.sec-head { display: flex; gap: 16px; align-items: baseline; margin-bottom: 8px; }
+.sec-num {
+  font-family: var(--mono); font-size: 12px; color: var(--accent);
+  letter-spacing: .1em; padding-top: 6px;
+}
+h2 {
+  font-family: var(--display); font-weight: 400; font-size: clamp(30px, 4.2vw, 44px);
+  line-height: 1.06; letter-spacing: -.01em; margin: 0; text-wrap: balance;
+}
+.lede { max-width: var(--measure); color: var(--ink-2); font-size: 16.5px; margin: 12px 0 0; }
+p { max-width: var(--measure); }
+
+/* ---------- curriculum table ---------- */
+.curric { margin-top: 34px; border-top: 1px solid var(--ink); }
+.ch {
+  display: grid; grid-template-columns: 62px minmax(0,1.05fr) minmax(0,1.35fr);
+  gap: 20px; padding: 15px 0; border-bottom: 1px solid var(--rule-soft);
+  align-items: start;
+}
+.ch-n {
+  font-family: var(--mono); font-size: 12px; color: var(--muted);
+  font-variant-numeric: tabular-nums; padding-top: 3px;
+}
+.ch-t { font-weight: 600; font-size: 15.5px; letter-spacing: -.005em; }
+.ch-d { color: var(--ink-2); font-size: 14.5px; }
+.ch-do {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 7px;
+  font-family: var(--mono); font-size: 11.5px; color: var(--add);
+  background: var(--add-bg); border-radius: 3px; padding: 3px 8px;
+}
+.ch-do::before { content: "▸"; font-size: 9px; }
+.ch.is-agent { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 62%); }
+.ch.is-agent .ch-n { color: var(--accent); }
+
+/* ---------- direction block ---------- */
+.dir-head { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.dir-badge {
+  font-family: var(--mono); font-weight: 600; font-size: 12px; letter-spacing: .1em;
+  border: 1px solid var(--ink); color: var(--ink);
+  padding: 6px 11px; border-radius: 2px; margin-top: 8px;
+}
+.thesis {
+  font-family: var(--display); font-size: clamp(21px, 2.6vw, 27px); line-height: 1.3;
+  font-style: italic; color: var(--ink-2); max-width: 30ch; margin: 16px 0 0;
+}
+
+/* specimen strip: palette + type, side by side */
+.spec {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 28px; margin: 30px 0 26px;
+  padding: 22px 24px; background: var(--surface); border: 1px solid var(--rule); border-radius: 4px;
+}
+.spec h4 {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase;
+  color: var(--muted); margin: 0 0 12px; font-weight: 500;
+}
+.swatches { display: flex; gap: 0; border-radius: 3px; overflow: hidden; border: 1px solid var(--rule-soft); }
+.sw { flex: 1; height: 54px; position: relative; }
+.sw span {
+  position: absolute; inset: auto 0 0 0; font-family: var(--mono); font-size: 9px;
+  text-align: center; padding: 3px 0; letter-spacing: .02em;
+}
+.type-spec { display: flex; flex-direction: column; gap: 2px; }
+.type-spec .t-d { font-size: 30px; line-height: 1.1; }
+.type-spec .t-b { font-size: 14.5px; }
+.type-spec .t-m { font-size: 12.5px; }
+.type-spec .t-name {
+  font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: .05em; margin-top: 3px;
+}
+
+/* browser chrome around each mock */
+.frame {
+  border: 1px solid var(--rule); border-radius: 8px; overflow: hidden;
+  box-shadow: var(--shadow); background: var(--surface);
+}
+.frame-bar {
+  display: flex; align-items: center; gap: 8px; padding: 9px 13px;
+  background: var(--surface-2); border-bottom: 1px solid var(--rule);
+}
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--rule); }
+.frame-url {
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  background: var(--paper); border-radius: 20px; padding: 3px 12px; margin-left: 6px;
+}
+.frame-body { overflow-x: auto; }
+.caption {
+  font-size: 13.5px; color: var(--muted); margin-top: 12px; max-width: var(--measure);
+  font-family: var(--mono); line-height: 1.5;
+}
+
+/* tradeoffs, written as a diff — the subject's own notation */
+.diffbox {
+  margin-top: 30px; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden;
+  font-family: var(--mono); font-size: 13.5px; background: var(--surface);
+}
+.diffbox .hunk {
+  padding: 7px 14px; background: var(--surface-2); color: var(--muted);
+  font-size: 11px; letter-spacing: .08em; text-transform: uppercase; border-bottom: 1px solid var(--rule);
+}
+.diffbox .line { padding: 6px 14px; display: flex; gap: 10px; align-items: baseline; line-height: 1.45; }
+.diffbox .line.plus  { background: var(--add-bg); color: var(--add); }
+.diffbox .line.minus { background: var(--del-bg); color: var(--del); }
+.diffbox .line .mk { width: 8px; flex: none; font-weight: 600; }
+.diffbox .line span:last-child { color: var(--ink-2); }
+.diffbox .line.plus span:last-child,
+.diffbox .line.minus span:last-child { color: inherit; opacity: .92; }
+
+/* recommendation / closing */
+.rec {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1px;
+  background: var(--rule); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden;
+  margin-top: 30px;
+}
+.rec > div { background: var(--surface); padding: 20px 22px; }
+.rec .pick { background: var(--surface); border-top: 3px solid var(--accent); }
+.rec h4 { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.rec p { margin: 0; font-size: 14.5px; color: var(--ink-2); }
+.rec strong { color: var(--ink); }
+
+footer { padding: 44px 0 70px; color: var(--muted); font-size: 13.5px; }
+footer p { max-width: var(--measure); }
+
+@media (max-width: 720px) {
+  .ch { grid-template-columns: 34px 1fr; }
+  .ch-d { grid-column: 2; }
+}
+
+/* ============================================================
+   DIRECTION A — TERMINAL QUEST
+   Amber-phosphor CRT. Commands are the interface.
+   Scoped so its world cannot leak into the frame.
+   ============================================================ */
+.mock-a {
+  --a-bg:    #17130D;
+  --a-panel: #1F1A12;
+  --a-line:  #322A1D;
+  --a-amber: #FFB627;
+  --a-dim:   #A78B54;
+  --a-text:  #E8DFCD;
+  --a-green: #7DD181;
+  --a-red:   #E86A5C;
+  background: var(--a-bg); color: var(--a-text);
+  font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  font-size: 13px; min-width: 720px;
+}
+.mock-a .a-top {
+  display: flex; align-items: center; gap: 18px; padding: 12px 18px;
+  border-bottom: 1px solid var(--a-line); background: var(--a-panel);
+}
+.mock-a .a-logo { color: var(--a-amber); font-weight: 700; letter-spacing: .12em; font-size: 12px; }
+.mock-a .a-map { display: flex; gap: 5px; margin-left: auto; align-items: center; }
+.mock-a .a-node {
+  width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--a-line);
+  display: grid; place-items: center; font-size: 9px; color: var(--a-dim);
+}
+.mock-a .a-node.done { background: var(--a-amber); border-color: var(--a-amber); color: #17130D; font-weight: 700; }
+.mock-a .a-node.now  { border-color: var(--a-amber); color: var(--a-amber); box-shadow: 0 0 0 3px rgba(255,182,39,.16); }
+.mock-a .a-xp { display: flex; align-items: center; gap: 9px; font-size: 11px; color: var(--a-dim); }
+.mock-a .a-bar { width: 96px; height: 5px; background: var(--a-line); border-radius: 3px; overflow: hidden; }
+.mock-a .a-bar i { display: block; height: 100%; width: 62%; background: var(--a-amber); }
+.mock-a .a-streak { color: var(--a-amber); font-size: 11px; }
+
+.mock-a .a-split { display: grid; grid-template-columns: minmax(0,.85fr) minmax(0,1.15fr); min-height: 430px; }
+.mock-a .a-left { padding: 26px 26px 30px; border-right: 1px solid var(--a-line); }
+.mock-a .a-eyebrow { color: var(--a-dim); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; }
+.mock-a .a-h {
+  font-size: 27px; line-height: 1.12; margin: 12px 0 14px; color: var(--a-text);
+  font-weight: 700; letter-spacing: -.02em;
+}
+.mock-a .a-p { font-size: 12.5px; line-height: 1.75; color: #C9BEA6; max-width: 42ch; }
+.mock-a .a-p code { color: var(--a-amber); }
+.mock-a .a-quest {
+  margin-top: 22px; border: 1px solid var(--a-amber); border-left-width: 3px;
+  background: rgba(255,182,39,.06); padding: 14px 16px;
+}
+.mock-a .a-quest .q-t { color: var(--a-amber); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; }
+.mock-a .a-quest .q-b { margin-top: 8px; font-size: 12.5px; line-height: 1.6; }
+.mock-a .a-check { margin-top: 12px; display: flex; flex-direction: column; gap: 7px; font-size: 12px; }
+.mock-a .a-check div { display: flex; gap: 9px; align-items: baseline; color: var(--a-dim); }
+.mock-a .a-check div.ok { color: var(--a-green); }
+.mock-a .a-check b { font-weight: 400; }
+
+.mock-a .a-right { display: flex; flex-direction: column; background: #12100A; }
+.mock-a .a-term { padding: 20px 22px; flex: 1; line-height: 1.85; font-size: 12.5px; }
+.mock-a .a-ps { color: var(--a-green); }
+.mock-a .a-ps b { color: var(--a-amber); font-weight: 400; }
+.mock-a .a-out { color: #9A9077; }
+.mock-a .a-out .g { color: var(--a-green); }
+.mock-a .a-out .r { color: var(--a-red); }
+.mock-a .a-cursor {
+  display: inline-block; width: 7px; height: 14px; background: var(--a-amber);
+  vertical-align: -2px; animation: a-blink 1.05s steps(2) infinite;
+}
+@keyframes a-blink { 0%,50% { opacity: 1 } 50.01%,100% { opacity: 0 } }
+@media (prefers-reduced-motion: reduce) { .mock-a .a-cursor { animation: none; } }
+.mock-a .a-graph {
+  border-top: 1px solid var(--a-line); padding: 14px 22px 18px; background: var(--a-panel);
+}
+.mock-a .a-graph .g-t { color: var(--a-dim); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 10px; }
+
+/* ============================================================
+   DIRECTION B — THE PAPER TRAIL
+   A bound notebook. History as a written record.
+   ============================================================ */
+.mock-b {
+  --b-paper: #F4F2ED;
+  --b-page:  #FBFAF7;
+  --b-ink:   #211E1A;
+  --b-ink2:  #57514A;
+  --b-rule:  #DCD6CB;
+  --b-thread:#B0323C;
+  --b-blue:  #3A5C8C;
+  background: var(--b-paper); color: var(--b-ink);
+  font-family: "Newsreader", Georgia, serif; min-width: 720px;
+}
+.mock-b .b-top {
+  display: flex; align-items: baseline; gap: 16px; padding: 14px 34px;
+  border-bottom: 1px solid var(--b-rule); background: var(--b-page);
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: #8A8177;
+}
+.mock-b .b-top .b-title { color: var(--b-ink); letter-spacing: .1em; }
+.mock-b .b-top .b-prog { margin-left: auto; display: flex; align-items: center; gap: 9px; }
+.mock-b .b-pips { display: flex; gap: 3px; }
+.mock-b .b-pips i { width: 15px; height: 3px; background: var(--b-rule); display: block; }
+.mock-b .b-pips i.on { background: var(--b-thread); }
+
+.mock-b .b-page { display: grid; grid-template-columns: minmax(0,1fr) 250px; gap: 0; background: var(--b-page); }
+.mock-b .b-col { padding: 38px 40px 42px; }
+.mock-b .b-marg {
+  padding: 38px 30px; border-left: 1px solid var(--b-rule);
+  background: linear-gradient(90deg, rgba(0,0,0,.018), transparent 30%);
+}
+.mock-b .b-ch {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--b-thread);
+}
+.mock-b h3.b-h {
+  font-size: 40px; font-weight: 400; line-height: 1.05; margin: 10px 0 4px;
+  letter-spacing: -.015em;
+}
+.mock-b .b-sub { font-style: italic; color: var(--b-ink2); font-size: 17px; margin: 0 0 22px; }
+.mock-b .b-body { font-size: 16.5px; line-height: 1.68; color: #2E2A25; max-width: 54ch; }
+.mock-b .b-body p { margin: 0 0 14px; max-width: none; }
+.mock-b .b-body .dropcap {
+  float: left; font-size: 60px; line-height: .82; padding: 5px 10px 0 0;
+  color: var(--b-thread); font-weight: 600;
+}
+.mock-b .b-body code {
+  font-family: var(--mono); font-size: .84em; background: #EDEAE2;
+  padding: 1px 5px; border-radius: 2px; color: var(--b-ink);
+}
+/* the index card — an inline widget you actually operate */
+.mock-b .b-card {
+  margin: 24px 0; background: #fff; border: 1px solid var(--b-rule);
+  box-shadow: 2px 3px 0 rgba(33,30,26,.07); border-radius: 2px;
+}
+.mock-b .b-card .c-h {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .15em; text-transform: uppercase;
+  color: #8A8177; padding: 9px 16px; border-bottom: 1px solid var(--b-rule);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.mock-b .b-card .c-h em { font-family: "Newsreader", serif; font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--b-thread); }
+.mock-b .b-trays { display: grid; grid-template-columns: repeat(3, 1fr); }
+.mock-b .b-tray { padding: 14px 14px 16px; border-right: 1px solid var(--b-rule); min-height: 128px; }
+.mock-b .b-tray:last-child { border-right: 0; }
+.mock-b .b-tray .t-n {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: #8A8177; margin-bottom: 9px;
+}
+.mock-b .b-chip {
+  font-family: var(--mono); font-size: 11px; background: #F1EEE7; border: 1px solid var(--b-rule);
+  border-radius: 2px; padding: 4px 8px; margin-bottom: 6px; display: flex; gap: 6px; align-items: center;
+}
+.mock-b .b-chip.moved { background: #E8F0E4; border-color: #B6CBAA; }
+.mock-b .b-chip .h { color: #A9A296; cursor: grab; }
+.mock-b .b-tray.locked { background: #F7F5F0; }
+.mock-b .b-note {
+  font-family: var(--mono); font-size: 11.5px; line-height: 1.65; color: var(--b-ink2);
+  border-left: 2px solid var(--b-thread); padding-left: 13px; margin-bottom: 26px;
+}
+.mock-b .b-note b { color: var(--b-ink); font-weight: 600; display: block; margin-bottom: 4px; }
+.mock-b .b-marg .m-t {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .15em; text-transform: uppercase;
+  color: #8A8177; margin-bottom: 14px;
+}
+
+/* ============================================================
+   DIRECTION C — THE WORKBENCH
+   The screen you will actually be looking at, simulated.
+   ============================================================ */
+.mock-c {
+  --c-bg:    #0E1116;
+  --c-panel: #151A21;
+  --c-panel2:#1B212A;
+  --c-line:  #262E39;
+  --c-text:  #DDE3EB;
+  --c-dim:   #7C8796;
+  --c-blue:  #4C9AFF;
+  --c-add:   #3FB950;
+  --c-del:   #F85149;
+  --c-warn:  #E3B341;
+  background: var(--c-bg); color: var(--c-text);
+  font-family: var(--body); font-size: 13px; min-width: 780px;
+}
+.mock-c .c-tabs {
+  display: flex; align-items: stretch; background: var(--c-panel); border-bottom: 1px solid var(--c-line);
+}
+.mock-c .c-tab {
+  font-family: var(--mono); font-size: 11.5px; padding: 10px 16px; color: var(--c-dim);
+  border-right: 1px solid var(--c-line); display: flex; align-items: center; gap: 7px;
+}
+.mock-c .c-tab.on { background: var(--c-bg); color: var(--c-text); box-shadow: inset 0 2px 0 var(--c-blue); }
+.mock-c .c-tab .m { color: var(--c-warn); font-size: 15px; line-height: 0; }
+.mock-c .c-branch {
+  margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--c-dim);
+  display: flex; align-items: center; gap: 8px; padding: 0 16px;
+}
+.mock-c .c-branch b { color: var(--c-blue); font-weight: 500; }
+
+.mock-c .c-grid { display: grid; grid-template-columns: 178px minmax(0,1fr) 268px; min-height: 400px; }
+.mock-c .c-rail { background: var(--c-panel); border-right: 1px solid var(--c-line); padding: 14px 0; }
+.mock-c .c-rail .r-t {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--c-dim); padding: 0 14px 10px;
+}
+.mock-c .c-f {
+  font-family: var(--mono); font-size: 11.5px; padding: 4px 14px; color: var(--c-dim);
+  display: flex; align-items: center; gap: 7px;
+}
+.mock-c .c-f.on { background: var(--c-panel2); color: var(--c-text); }
+.mock-c .c-f .st { margin-left: auto; font-size: 10px; font-weight: 700; }
+.mock-c .c-f .st.m { color: var(--c-warn); }
+.mock-c .c-f .st.a { color: var(--c-add); }
+.mock-c .c-f .ind { padding-left: 12px; }
+
+.mock-c .c-main { display: flex; flex-direction: column; min-width: 0; }
+.mock-c .c-diff { flex: 1; font-family: var(--mono); font-size: 12px; line-height: 1.75; padding: 10px 0; overflow: hidden; }
+.mock-c .c-hunk { color: var(--c-dim); padding: 4px 16px; background: var(--c-panel); border-block: 1px solid var(--c-line); font-size: 11px; }
+.mock-c .c-l { display: flex; gap: 0; padding: 0 16px 0 0; }
+.mock-c .c-l .ln { width: 46px; flex: none; text-align: right; padding-right: 14px; color: #4A5462; font-variant-numeric: tabular-nums; }
+.mock-c .c-l .mk { width: 16px; flex: none; }
+.mock-c .c-l.add { background: rgba(63,185,80,.10); }
+.mock-c .c-l.add .mk, .mock-c .c-l.add .tx { color: var(--c-add); }
+.mock-c .c-l.del { background: rgba(248,81,73,.10); }
+.mock-c .c-l.del .mk, .mock-c .c-l.del .tx { color: var(--c-del); }
+.mock-c .c-l .tx { white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+.mock-c .c-term {
+  border-top: 1px solid var(--c-line); background: #0A0D11; padding: 12px 16px 14px;
+  font-family: var(--mono); font-size: 11.5px; line-height: 1.8;
+}
+.mock-c .c-term .p { color: var(--c-add); }
+.mock-c .c-term .o { color: var(--c-dim); }
+.mock-c .c-term .cur { display: inline-block; width: 6px; height: 12px; background: var(--c-blue); vertical-align: -1px; }
+
+.mock-c .c-agent { background: var(--c-panel); border-left: 1px solid var(--c-line); display: flex; flex-direction: column; }
+.mock-c .c-agent .g-h {
+  padding: 11px 15px; border-bottom: 1px solid var(--c-line);
+  display: flex; align-items: center; gap: 9px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--c-dim);
+}
+.mock-c .c-agent .g-h .pill {
+  margin-left: auto; background: rgba(76,154,255,.14); color: var(--c-blue);
+  border-radius: 20px; padding: 2px 9px; font-size: 9.5px; letter-spacing: .06em;
+}
+.mock-c .c-msg { padding: 13px 15px; border-bottom: 1px solid var(--c-line); font-size: 12.5px; line-height: 1.62; }
+.mock-c .c-msg .who {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--c-dim); margin-bottom: 6px;
+}
+.mock-c .c-msg .who.claude { color: var(--c-blue); }
+.mock-c .c-msg code { font-family: var(--mono); font-size: 11.5px; color: var(--c-warn); }
+.mock-c .c-act { padding: 13px 15px; display: flex; flex-direction: column; gap: 8px; }
+.mock-c .c-act .a-t {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--c-dim);
+}
+.mock-c .c-btn {
+  font-family: var(--mono); font-size: 11.5px; text-align: left; padding: 8px 11px;
+  border: 1px solid var(--c-line); border-radius: 4px; background: var(--c-panel2); color: var(--c-text);
+  display: flex; gap: 9px; align-items: center;
+}
+.mock-c .c-btn.good { border-color: rgba(63,185,80,.5); color: var(--c-add); }
+.mock-c .c-btn.bad  { border-color: rgba(248,81,73,.35); color: var(--c-del); }
+.mock-c .c-hint { font-size: 11.5px; color: var(--c-dim); line-height: 1.55; margin-top: 2px; }
+
+/* agent picker preview, shared concept */
+.pickers { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.pick-card {
+  border: 1px solid var(--rule); border-radius: 6px; padding: 13px 16px; background: var(--surface);
+  min-width: 172px; display: flex; flex-direction: column; gap: 3px;
+}
+.pick-card.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.pick-card .pc-n { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.pick-card .pc-f { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.pick-card .pc-c {
+  width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid var(--rule); flex: none;
+  display: grid; place-items: center; font-size: 10px; color: #fff;
+}
+.pick-card.on .pc-c { background: var(--accent); border-color: var(--accent); }
+</style>
+
+<div class="jump">
+  <div class="jump-inner">
+    <a href="#brief" class="is-here">Brief</a>
+    <a href="#curriculum">Curriculum</a>
+    <a href="#a">A · Terminal Quest</a>
+    <a href="#b">B · Paper Trail</a>
+    <a href="#c">C · Workbench</a>
+    <a href="#decide">Decide</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header class="masthead" id="brief">
+    <div class="kicker">
+      <span>Design mockups</span><span>·</span><span>v0 — for review</span><span>·</span><b>pick one, then we build v1.0</b>
+    </div>
+    <h1>Three ways to teach <em>git</em></h1>
+    <p class="standfirst">
+      One learner: someone who has never run <code>git init</code>, who is now working
+      alongside an AI agent that writes hundreds of lines an hour. They need version
+      control more urgently than any generation of beginner before them, and they have
+      less patience for a manual. Same curriculum in all three directions below —
+      what changes is the room you learn it in.
+    </p>
+    <dl class="meta-row">
+      <div class="meta"><dt>Deliverable</dt><dd>Interactive web tutorial, ~45 min end to end</dd></div>
+      <div class="meta"><dt>Runs on</dt><dd>Static page, no install, no account, no server</dd></div>
+      <div class="meta"><dt>Personalised by</dt><dd>Claude Code · Claude Desktop · Antigravity · Codex</dd></div>
+      <div class="meta"><dt>Ends with</dt><dd>A real repo and a rules file they wrote</dd></div>
+    </dl>
+  </header>
+
+  <section id="curriculum">
+    <div class="sec-head"><span class="sec-num">01</span><h2>The curriculum is the same in all three</h2></div>
+    <p class="lede">
+      Ten chapters. Every one ends with something the learner <em>did</em>, not something they
+      read — that is the line marked in green. Chapters 08 and 09 rewrite themselves around
+      whichever agents the learner picked.
+    </p>
+
+    <div class="curric">
+      <div class="ch">
+        <div class="ch-n">00</div>
+        <div><div class="ch-t">Why anyone bothers</div></div>
+        <div class="ch-d">
+          The folder full of <code>final_v2_FINAL_real.docx</code>, and the newer problem: an agent
+          just rewrote nine files and you cannot remember what three of them used to say.
+          <div class="ch-do">Break a file, then get it back — in 20 seconds, before learning any theory</div>
+        </div>
+      </div>
+      <div class="ch">
+        <div class="ch-n">01</div>
+        <div><div class="ch-t">A GitHub account</div></div>
+        <div class="ch-d">
+          Picking a username you will still want in five years. Email privacy, and why 2FA
+          is not optional any more.
+          <div class="ch-do">Guided sign-up with a live checklist alongside the real site</div>
+        </div>
+      </div>
+      <div class="ch">
+        <div class="ch-n">02</div>
+        <div><div class="ch-t">What a repository actually is</div></div>
+        <div class="ch-d">
+          A folder, plus a hidden <code>.git</code> that remembers every version of it. Local vs.
+          remote drawn as two boxes and one arrow.
+          <div class="ch-do">Peek inside a simulated <code>.git</code> and find your own commit</div>
+        </div>
+      </div>
+      <div class="ch">
+        <div class="ch-n">03</div>
+        <div><div class="ch-t">Public or private</div></div>
+        <div class="ch-d">
+          What "public" really exposes, what it does not, and the one mistake that costs
+          money: a committed API key.
+          <div class="ch-do">Sort ten files into "safe to publish" / "never" — with a leaked-key twist</div>
+        </div>
+      </div>
+      <div class="ch">
+        <div class="ch-n">04</div>
+        <div><div class="ch-t">Your first repository</div></div>
+        <div class="ch-d">
+          Both routes: the green button on github.com, and <code>git init</code> then
+          <code>gh repo create</code> from a terminal.
+          <div class="ch-do">Run the four commands in a sandbox that checks each one</div>
+        </div>
+      </div>
+      <div class="ch">
+        <div class="ch-n">05</div>
+        <div><div class="ch-t">The loop you will run all day</div></div>
+        <div class="ch-d">
+          <code>status</code> → <code>add</code> → <code>commit</code> → <code>push</code>. The three
+          places a change can live, shown as three trays you move things between.
+          <div class="ch-do">Stage, commit and push a change; watch the graph grow a node</div>
+        </div>
+      </div>
+      <div class="ch">
+        <div class="ch-n">06</div>
+        <div><div class="ch-t">Branches, and undoing anything</div></div>
+        <div class="ch-d">
+          Branching as a cheap parallel universe. Then the four panic buttons:
+          <code>restore</code>, <code>revert</code>, <code>reset</code>, <code>reflog</code>.
+          <div class="ch-do">Deliberately destroy work, then recover it four different ways</div>
+        </div>
+      </div>
+      <div class="ch">
+        <div class="ch-n">07</div>
+        <div><div class="ch-t">Working with other people</div></div>
+        <div class="ch-d">
+          <code>clone</code>, <code>pull</code>, a pull request, and reading a review. Your first
+          merge conflict, on purpose, in a safe room.
+          <div class="ch-do">Resolve a real conflict by hand, then open a simulated PR</div>
+        </div>
+      </div>
+      <div class="ch is-agent">
+        <div class="ch-n">08</div>
+        <div><div class="ch-t">Git when an agent is typing</div><div class="ch-d" style="margin-top:5px;font-size:13px">Personalised</div></div>
+        <div class="ch-d">
+          Commit before you prompt. Read the diff, not the summary. One branch per task, so
+          "throw it away" stays cheap. Worktrees when two agents run at once. Why
+          <code>.gitignore</code> and secret-scanning matter more, not less, now.
+          <div class="ch-do">Review an agent's 400-line diff and catch the thing it broke</div>
+        </div>
+      </div>
+      <div class="ch is-agent">
+        <div class="ch-n">09</div>
+        <div><div class="ch-t">Write your rules file</div><div class="ch-d" style="margin-top:5px;font-size:13px">Personalised</div></div>
+        <div class="ch-d">
+          <code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>GEMINI.md</code> — same idea, different
+          filenames. Build one from your answers, with git rules the agent will actually follow.
+          <div class="ch-do">Generate your file, copy it, and drop it in a real project</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="lede" style="margin-top:30px">
+      One picker, asked once in chapter 08 and remembered for the rest of the lesson.
+      Multi-select — plenty of people run two.
+    </p>
+    <div class="pickers">
+      <div class="pick-card on">
+        <div class="pc-n"><span class="pc-c">✓</span> Claude Code</div>
+        <div class="pc-f">CLAUDE.md · .claude/</div>
+      </div>
+      <div class="pick-card on">
+        <div class="pc-n"><span class="pc-c">✓</span> Claude Desktop</div>
+        <div class="pc-f">Projects · MCP filesystem</div>
+      </div>
+      <div class="pick-card">
+        <div class="pc-n"><span class="pc-c"></span> Google Antigravity</div>
+        <div class="pc-f">GEMINI.md · .agents/</div>
+      </div>
+      <div class="pick-card">
+        <div class="pc-n"><span class="pc-c"></span> OpenAI Codex</div>
+        <div class="pc-f">AGENTS.md</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DIRECTION A ============ -->
+  <section id="a">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Direction A — Terminal Quest</h2></div>
+    <div class="dir-head">
+      <span class="dir-badge">THE GAME</span>
+      <p class="thesis">The scary black window is the playground. You clear it like a level.</p>
+    </div>
+
+    <div class="spec">
+      <div>
+        <h4>Palette — amber phosphor</h4>
+        <div class="swatches">
+          <div class="sw" style="background:#17130D"><span style="color:#8B7A57">17130D</span></div>
+          <div class="sw" style="background:#1F1A12"><span style="color:#8B7A57">1F1A12</span></div>
+          <div class="sw" style="background:#FFB627"><span style="color:#17130D">FFB627</span></div>
+          <div class="sw" style="background:#7DD181"><span style="color:#17130D">7DD181</span></div>
+          <div class="sw" style="background:#E86A5C"><span style="color:#17130D">E86A5C</span></div>
+          <div class="sw" style="background:#E8DFCD"><span style="color:#17130D">E8DFCD</span></div>
+        </div>
+      </div>
+      <div>
+        <h4>Type — one voice, monospaced</h4>
+        <div class="type-spec">
+          <div class="t-d" style="font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:-.02em">Stage it.</div>
+          <div class="t-b" style="font-family:'JetBrains Mono',monospace">Everything set in JetBrains Mono, 400 &amp; 700.</div>
+          <div class="t-name">JetBrains Mono · display, body and code all in one face</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="frame-url">learn-git.dev / chapter-05</span></div>
+      <div class="frame-body">
+        <div class="mock-a">
+          <div class="a-top">
+            <span class="a-logo">GIT QUEST</span>
+            <span class="a-xp"><span>LVL 3</span><span class="a-bar"><i></i></span><span>620 / 1000 XP</span></span>
+            <span class="a-streak">◆ 4-day streak</span>
+            <span class="a-map">
+              <span class="a-node done">✓</span><span class="a-node done">✓</span><span class="a-node done">✓</span>
+              <span class="a-node done">✓</span><span class="a-node done">✓</span><span class="a-node now">05</span>
+              <span class="a-node">06</span><span class="a-node">07</span><span class="a-node">08</span><span class="a-node">09</span>
+            </span>
+          </div>
+          <div class="a-split">
+            <div class="a-left">
+              <div class="a-eyebrow">Chapter 05 · Quest 3 of 4</div>
+              <div class="a-h">Three places a<br>change can hide</div>
+              <p class="a-p">
+                You edited <code>notes.md</code>. Git has noticed — but it has not
+                <em>recorded</em> anything yet. Right now your change lives in the working
+                directory only. Nowhere else. Close the laptop wrong and it is gone.
+              </p>
+              <p class="a-p" style="margin-top:12px">
+                <code>git add</code> moves it to the staging area: the shortlist of things
+                going into the next snapshot. <code>git commit</code> makes the snapshot permanent.
+              </p>
+              <div class="a-quest">
+                <div class="q-t">▸ Quest — stage and commit</div>
+                <div class="q-b">Get <code>notes.md</code> from "modified" to "committed" without staging <code>secrets.env</code>.</div>
+                <div class="a-check">
+                  <div class="ok"><b>[✓]</b> notes.md staged</div>
+                  <div class="ok"><b>[✓]</b> commit message written</div>
+                  <div><b>[ ]</b> secrets.env still untracked</div>
+                  <div><b>[ ]</b> pushed to origin</div>
+                </div>
+              </div>
+            </div>
+            <div class="a-right">
+              <div class="a-term">
+                <div class="a-ps">learner@quest <b>~/my-first-repo</b> $ git status</div>
+                <div class="a-out">On branch <span class="g">main</span><br>
+                  Changes not staged for commit:<br>
+                  &nbsp;&nbsp;modified: <span class="r">notes.md</span><br>
+                  Untracked files:<br>
+                  &nbsp;&nbsp;<span class="r">secrets.env</span>
+                </div>
+                <div class="a-ps" style="margin-top:8px">learner@quest <b>~/my-first-repo</b> $ git add notes.md</div>
+                <div class="a-ps" style="margin-top:8px">learner@quest <b>~/my-first-repo</b> $ git commit -m "Add reading notes"</div>
+                <div class="a-out">[main <span class="g">a3f91c2</span>] Add reading notes<br>
+                  &nbsp;1 file changed, <span class="g">7 insertions(+)</span>
+                </div>
+                <div class="a-ps" style="margin-top:8px">learner@quest <b>~/my-first-repo</b> $ <span class="a-cursor"></span></div>
+              </div>
+              <div class="a-graph">
+                <div class="g-t">Your history — live</div>
+                <svg width="330" height="46" viewBox="0 0 330 46" role="img" aria-label="Four commits in a row on branch main, the newest highlighted">
+                  <line x1="22" y1="18" x2="278" y2="18" stroke="#322A1D" stroke-width="2"/>
+                  <circle cx="22"  cy="18" r="6" fill="#A78B54"/>
+                  <circle cx="107" cy="18" r="6" fill="#A78B54"/>
+                  <circle cx="192" cy="18" r="6" fill="#A78B54"/>
+                  <circle cx="278" cy="18" r="7" fill="#FFB627"/>
+                  <text x="22"  y="41" fill="#7C6B4A" font-size="9" font-family="JetBrains Mono, monospace" text-anchor="middle">e1b0f</text>
+                  <text x="107" y="41" fill="#7C6B4A" font-size="9" font-family="JetBrains Mono, monospace" text-anchor="middle">c72da</text>
+                  <text x="192" y="41" fill="#7C6B4A" font-size="9" font-family="JetBrains Mono, monospace" text-anchor="middle">9f014</text>
+                  <text x="278" y="41" fill="#FFB627" font-size="9" font-family="JetBrains Mono, monospace" text-anchor="middle">a3f91</text>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="caption">Chapter 05 — the terminal is the primary surface; prose sits beside it, never above it.</p>
+
+    <div class="diffbox">
+      <div class="hunk">@@ direction A · tradeoffs @@</div>
+      <div class="line plus"><span class="mk">+</span><span>Confronts the actual fear head-on — by the end the terminal feels like theirs.</span></div>
+      <div class="line plus"><span class="mk">+</span><span>Quests, XP and a streak give a real reason to come back for chapter 06.</span></div>
+      <div class="line plus"><span class="mk">+</span><span>Every command is typed for real, so the muscle memory transfers on day one.</span></div>
+      <div class="line minus"><span class="mk">−</span><span>Mono-only type gets tiring across 45 minutes of reading.</span></div>
+      <div class="line minus"><span class="mk">−</span><span>Gamification can read as childish to a career-changer who wants to be taken seriously.</span></div>
+      <div class="line minus"><span class="mk">−</span><span>Chapters 01 and 03 (accounts, privacy) have no terminal, so the metaphor sags there.</span></div>
+    </div>
+  </section>
+
+  <!-- ============ DIRECTION B ============ -->
+  <section id="b">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Direction B — The Paper Trail</h2></div>
+    <div class="dir-head">
+      <span class="dir-badge">THE BOOK</span>
+      <p class="thesis">Version control is not a program. It is a habit of writing things down.</p>
+    </div>
+
+    <div class="spec">
+      <div>
+        <h4>Palette — laid paper &amp; red thread</h4>
+        <div class="swatches">
+          <div class="sw" style="background:#F4F2ED"><span style="color:#57514A">F4F2ED</span></div>
+          <div class="sw" style="background:#FBFAF7"><span style="color:#57514A">FBFAF7</span></div>
+          <div class="sw" style="background:#DCD6CB"><span style="color:#4A443C">DCD6CB</span></div>
+          <div class="sw" style="background:#B0323C"><span style="color:#FBFAF7">B0323C</span></div>
+          <div class="sw" style="background:#3A5C8C"><span style="color:#FBFAF7">3A5C8C</span></div>
+          <div class="sw" style="background:#211E1A"><span style="color:#DCD6CB">211E1A</span></div>
+        </div>
+      </div>
+      <div>
+        <h4>Type — a reading face and a clerical one</h4>
+        <div class="type-spec">
+          <div class="t-d" style="font-family:Newsreader,Georgia,serif;font-weight:400">Keep the ledger.</div>
+          <div class="t-b" style="font-family:Newsreader,Georgia,serif">Newsreader for prose, at a genuinely readable 16.5px.</div>
+          <div class="t-m" style="font-family:'IBM Plex Mono',monospace;color:var(--muted)">IBM Plex Mono — commands, labels, marginalia</div>
+          <div class="t-name">Newsreader + IBM Plex Mono</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="frame-url">learn-git.dev / chapter-05</span></div>
+      <div class="frame-body">
+        <div class="mock-b">
+          <div class="b-top">
+            <span class="b-title">The Paper Trail</span>
+            <span>Chapter Five</span>
+            <span class="b-prog"><span>5 of 10</span><span class="b-pips">
+              <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i>
+            </span></span>
+          </div>
+          <div class="b-page">
+            <div class="b-col">
+              <div class="b-ch">Chapter Five</div>
+              <h3 class="b-h">Three trays on a desk</h3>
+              <p class="b-sub">Where a change sits before it becomes history</p>
+              <div class="b-body">
+                <p><span class="dropcap">P</span>icture a clerk with three trays. The first holds
+                everything currently on the desk — scribbled on, crossed out, half-finished. That is
+                your <strong>working directory</strong>, and git watches it but promises nothing about it.</p>
+                <p>The second tray is the shortlist: the pages the clerk has decided belong in today's
+                entry. Moving a page there is <code>git add</code>. Nothing is permanent yet — you can
+                take a page back out.</p>
+                <p>The third tray is the bound ledger, and it only ever grows. <code>git commit</code>
+                copies the shortlist into it, stamps it with the date, your name, and a sentence
+                explaining why. That sentence is the whole point.</p>
+
+                <div class="b-card">
+                  <div class="c-h"><span>Try it — move the pages</span><em>drag between trays</em></div>
+                  <div class="b-trays">
+                    <div class="b-tray">
+                      <div class="t-n">Working directory</div>
+                      <div class="b-chip"><span class="h">⠿</span> secrets.env</div>
+                      <div class="b-chip"><span class="h">⠿</span> draft.md</div>
+                    </div>
+                    <div class="b-tray">
+                      <div class="t-n">Staging area</div>
+                      <div class="b-chip moved"><span class="h">⠿</span> notes.md</div>
+                    </div>
+                    <div class="b-tray locked">
+                      <div class="t-n">History — sealed</div>
+                      <div class="b-chip">a3f91c2 · notes</div>
+                      <div class="b-chip">9f01477 · setup</div>
+                    </div>
+                  </div>
+                </div>
+
+                <p>Notice what did <em>not</em> move. <code>secrets.env</code> stayed on the desk, and
+                that is correct — some pages never go in the ledger at all. Chapter three explains
+                how to make git refuse to file them even if you ask.</p>
+              </div>
+            </div>
+            <div class="b-marg">
+              <div class="m-t">In the margin</div>
+              <div class="b-note">
+                <b>Why the sentence matters</b>
+                In six months the only thing standing between you and total confusion is the
+                message you wrote today. "fix stuff" helps nobody, least of all an agent
+                reading your history for context.
+              </div>
+              <div class="b-note">
+                <b>The ledger only grows</b>
+                Almost nothing in git is ever really deleted. That is why chapter six can
+                promise you that any mistake is recoverable.
+              </div>
+              <div class="m-t" style="margin-top:26px">Your history</div>
+              <svg width="180" height="120" viewBox="0 0 180 120" role="img" aria-label="A commit history drawn as a thread with four knots, the newest labelled a3f91c2">
+                <path d="M22 14 C22 44, 22 44, 22 52 C22 74, 22 74, 22 100" stroke="#B0323C" stroke-width="1.5" fill="none"/>
+                <circle cx="22" cy="14"  r="4.5" fill="#FBFAF7" stroke="#B0323C" stroke-width="1.5"/>
+                <circle cx="22" cy="52"  r="4.5" fill="#FBFAF7" stroke="#B0323C" stroke-width="1.5"/>
+                <circle cx="22" cy="100" r="5.5" fill="#B0323C"/>
+                <text x="38" y="18"  fill="#57514A" font-size="10.5" font-family="IBM Plex Mono, monospace">e1b0f2c</text>
+                <text x="38" y="31"  fill="#8A8177" font-size="10" font-family="Newsreader, serif">first commit</text>
+                <text x="38" y="56"  fill="#57514A" font-size="10.5" font-family="IBM Plex Mono, monospace">9f01477</text>
+                <text x="38" y="69"  fill="#8A8177" font-size="10" font-family="Newsreader, serif">project setup</text>
+                <text x="38" y="104" fill="#211E1A" font-size="10.5" font-family="IBM Plex Mono, monospace">a3f91c2</text>
+                <text x="38" y="117" fill="#B0323C" font-size="10" font-family="Newsreader, serif">add reading notes</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="caption">Chapter 05 — prose leads, widgets are set into the text like figures in a book, notes live in the margin.</p>
+
+    <div class="diffbox">
+      <div class="hunk">@@ direction B · tradeoffs @@</div>
+      <div class="line plus"><span class="mk">+</span><span>The least intimidating of the three — nothing here looks like "programming".</span></div>
+      <div class="line plus"><span class="mk">+</span><span>Genuinely comfortable to read for 45 minutes; explanations can be longer without hurting.</span></div>
+      <div class="line plus"><span class="mk">+</span><span>The ledger metaphor holds all the way through — branches, merges and history all fit it.</span></div>
+      <div class="line minus"><span class="mk">−</span><span>Softens the terminal instead of teaching it; the first real shell may still be a shock.</span></div>
+      <div class="line minus"><span class="mk">−</span><span>Quiet by design, so there is less pull to come back tomorrow.</span></div>
+      <div class="line minus"><span class="mk">−</span><span>Chapter 08 is about watching an agent work — hard to stage on a paper desk.</span></div>
+    </div>
+  </section>
+
+  <!-- ============ DIRECTION C ============ -->
+  <section id="c">
+    <div class="sec-head"><span class="sec-num">04</span><h2>Direction C — The Workbench</h2></div>
+    <div class="dir-head">
+      <span class="dir-badge">THE SIMULATOR</span>
+      <p class="thesis">Learn in a replica of the screen you will be staring at tomorrow.</p>
+    </div>
+
+    <div class="spec">
+      <div>
+        <h4>Palette — slate with one electric blue</h4>
+        <div class="swatches">
+          <div class="sw" style="background:#0E1116"><span style="color:#7C8796">0E1116</span></div>
+          <div class="sw" style="background:#151A21"><span style="color:#7C8796">151A21</span></div>
+          <div class="sw" style="background:#4C9AFF"><span style="color:#0E1116">4C9AFF</span></div>
+          <div class="sw" style="background:#3FB950"><span style="color:#0E1116">3FB950</span></div>
+          <div class="sw" style="background:#F85149"><span style="color:#0E1116">F85149</span></div>
+          <div class="sw" style="background:#DDE3EB"><span style="color:#0E1116">DDE3EB</span></div>
+        </div>
+      </div>
+      <div>
+        <h4>Type — product UI, not editorial</h4>
+        <div class="type-spec">
+          <div class="t-d" style="font-family:'IBM Plex Sans',sans-serif;font-weight:600;letter-spacing:-.02em">Review the diff.</div>
+          <div class="t-b" style="font-family:'IBM Plex Sans',sans-serif">IBM Plex Sans for interface and prose.</div>
+          <div class="t-m" style="font-family:'IBM Plex Mono',monospace;color:var(--muted)">IBM Plex Mono — code, paths, diffs, terminal</div>
+          <div class="t-name">IBM Plex Sans + IBM Plex Mono (one family, two voices)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="frame">
+      <div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="frame-url">learn-git.dev / chapter-08 · claude-code</span></div>
+      <div class="frame-body">
+        <div class="mock-c">
+          <div class="c-tabs">
+            <div class="c-tab on">notes.md <span class="m">●</span></div>
+            <div class="c-tab">CLAUDE.md</div>
+            <div class="c-tab">.gitignore</div>
+            <div class="c-branch">⑂ <b>feat/add-notes</b> · 2 changed</div>
+          </div>
+          <div class="c-grid">
+            <div class="c-rail">
+              <div class="r-t">my-first-repo</div>
+              <div class="c-f">▾ src</div>
+              <div class="c-f ind on">notes.md <span class="st m">M</span></div>
+              <div class="c-f ind">index.js</div>
+              <div class="c-f">CLAUDE.md <span class="st a">A</span></div>
+              <div class="c-f">.gitignore</div>
+              <div class="c-f" style="color:#4A5462">secrets.env <span class="st" style="color:#4A5462">ignored</span></div>
+              <div class="r-t" style="padding-top:20px">Chapter 08 · step 2 of 5</div>
+              <div class="c-f">✓ Commit before prompting</div>
+              <div class="c-f on">▸ Read the diff</div>
+              <div class="c-f">· Branch per task</div>
+              <div class="c-f">· Keep secrets out</div>
+              <div class="c-f">· Write CLAUDE.md</div>
+            </div>
+
+            <div class="c-main">
+              <div class="c-diff">
+                <div class="c-hunk">@@ -12,7 +12,9 @@ src/notes.md — proposed by Claude Code</div>
+                <div class="c-l"><span class="ln">12</span><span class="mk"></span><span class="tx">## Reading list</span></div>
+                <div class="c-l"><span class="ln">13</span><span class="mk"></span><span class="tx"></span></div>
+                <div class="c-l del"><span class="ln">14</span><span class="mk">−</span><span class="tx">- Pro Git, ch. 1-3</span></div>
+                <div class="c-l add"><span class="ln">14</span><span class="mk">+</span><span class="tx">- Pro Git, ch. 1-3 (done)</span></div>
+                <div class="c-l add"><span class="ln">15</span><span class="mk">+</span><span class="tx">- Trunk-based development</span></div>
+                <div class="c-l"><span class="ln">16</span><span class="mk"></span><span class="tx"></span></div>
+                <div class="c-hunk">@@ -1,0 +1,4 @@ .gitignore — proposed by Claude Code</div>
+                <div class="c-l add"><span class="ln">1</span><span class="mk">+</span><span class="tx">node_modules/</span></div>
+                <div class="c-l add"><span class="ln">2</span><span class="mk">+</span><span class="tx">.DS_Store</span></div>
+                <div class="c-l del"><span class="ln">3</span><span class="mk">−</span><span class="tx">secrets.env        ← removed. Is that safe?</span></div>
+              </div>
+              <div class="c-term">
+                <div><span class="p">$</span> git add -p</div>
+                <div class="o">Stage this hunk [y,n,q,a,d,s,e,?]? </div>
+                <div><span class="p">$</span> <span class="cur"></span></div>
+              </div>
+            </div>
+
+            <div class="c-agent">
+              <div class="g-h">Agent <span class="pill">Claude Code</span></div>
+              <div class="c-msg">
+                <div class="who">You</div>
+                Tidy up my notes and add a gitignore
+              </div>
+              <div class="c-msg">
+                <div class="who claude">Claude Code</div>
+                Updated <code>notes.md</code> and created <code>.gitignore</code>. Two files changed.
+              </div>
+              <div class="c-act">
+                <div class="a-t">Your move</div>
+                <button class="c-btn good">✓ Stage notes.md</button>
+                <button class="c-btn bad">✕ Reject the .gitignore hunk</button>
+                <button class="c-btn">↺ git restore .gitignore</button>
+                <p class="c-hint">
+                  The summary said "created a gitignore". The diff says it also
+                  <strong>un-ignored</strong> <code>secrets.env</code>. This is why you read the diff.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="caption">Chapter 08 — the agent panel proposes, the diff tells the truth, and the learner has to spot the difference.</p>
+
+    <div class="diffbox">
+      <div class="hunk">@@ direction C · tradeoffs @@</div>
+      <div class="line plus"><span class="mk">+</span><span>Chapters 08–09 are the reason this project exists, and this direction was built for them.</span></div>
+      <div class="line plus"><span class="mk">+</span><span>Teaches diff-reading as a skill, which is the single highest-value habit for agent users.</span></div>
+      <div class="line plus"><span class="mk">+</span><span>Looks like the tools they are about to open, so nothing feels unfamiliar later.</span></div>
+      <div class="line minus"><span class="mk">−</span><span>Three panes is a lot of screen for someone on chapter 00 who has never seen an IDE.</span></div>
+      <div class="line minus"><span class="mk">−</span><span>Most work of the three to build well; a bad IDE simulation is worse than none.</span></div>
+      <div class="line minus"><span class="mk">−</span><span>Risks teaching one editor's layout rather than git itself.</span></div>
+    </div>
+  </section>
+
+  <!-- ============ DECIDE ============ -->
+  <section id="decide" style="border-bottom:0">
+    <div class="sec-head"><span class="sec-num">05</span><h2>What I would build, and why</h2></div>
+    <p class="lede">
+      These are not mutually exclusive in the way they look. The real question is which
+      surface leads — and the honest answer is that the curriculum changes shape halfway
+      through. Chapters 00–07 are a beginner learning fundamentals. Chapters 08–09 are that
+      same person reviewing a machine's work.
+    </p>
+
+    <div class="rec">
+      <div class="pick">
+        <h4>Recommendation</h4>
+        <p><strong>A, growing into C.</strong> Open as Terminal Quest — one surface, one
+        face, low intimidation, real commands from minute one. Then at chapter 08 the layout
+        <em>earns</em> its third pane: the agent panel slides in and the room becomes the
+        Workbench. The lesson levels up at exactly the point the learner does.</p>
+      </div>
+      <div>
+        <h4>Pick B instead if…</h4>
+        <p>the audience is genuinely non-technical — a writer, a designer, a founder — and
+        the goal is "stop being afraid of this" rather than "be productive by Friday".</p>
+      </div>
+      <div>
+        <h4>Pick C alone if…</h4>
+        <p>the learner already writes code and is only here because an agent is now
+        committing on their behalf. Skip the gentle on-ramp; go straight to diff review.</p>
+      </div>
+    </div>
+
+    <div class="diffbox" style="margin-top:34px">
+      <div class="hunk">@@ what v1.0 ships either way @@</div>
+      <div class="line plus"><span class="mk">+</span><span>A single static page — no build step, no server, no account. Opens from a file.</span></div>
+      <div class="line plus"><span class="mk">+</span><span>A working sandbox git engine: real repo state, staging, commits, branches, merges, reflog.</span></div>
+      <div class="line plus"><span class="mk">+</span><span>A live commit graph that redraws as the learner types commands.</span></div>
+      <div class="line plus"><span class="mk">+</span><span>Progress saved locally, so chapter 06 is still waiting tomorrow.</span></div>
+      <div class="line plus"><span class="mk">+</span><span>Agent picker driving chapters 08–09, with a rules-file generator you can copy out.</span></div>
+      <div class="line plus"><span class="mk">+</span><span>Keyboard operable, screen-reader labelled, and readable in light and dark.</span></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      Reply with a direction — <b>A</b>, <b>B</b>, <b>C</b>, or the <b>A→C hybrid</b> — and any
+      changes to the ten chapters. v1.0 gets built against whatever you pick.
+    </p>
+  </footer>
+</div>
+
+<script>
+// Sticky nav: mark the section currently in view.
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('.jump a'));
+  var map = {};
+  links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      links.forEach(function (a) { a.classList.remove('is-here'); });
+      if (map[e.target.id]) map[e.target.id].classList.add('is-here');
+    });
+  }, { rootMargin: '-45% 0px -50% 0px' });
+  ['brief', 'curriculum', 'a', 'b', 'c', 'decide'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) obs.observe(el);
+  });
+})();
+</script>

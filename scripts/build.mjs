@@ -1,0 +1,54 @@
+/**
+ * build.mjs — inline every stylesheet and script into one file.
+ *
+ * Produces two artefacts from the same source:
+ *   dist/index.html    a complete standalone page (GitHub Pages, or open it from disk)
+ *   dist/artifact.html the same page as a body fragment, for publishing as an Artifact
+ *
+ * No bundler, no dependencies. `node scripts/build.mjs`.
+ */
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const src = join(root, 'src');
+const dist = join(root, 'dist');
+
+const read = (relative) => readFileSync(join(src, relative), 'utf8');
+
+let html = read('index.html');
+
+// Inline local stylesheets. The Google Fonts link stays remote by design.
+html = html.replace(
+  /^[ \t]*<link rel="stylesheet" href="(css\/[^"]+)">\r?\n/gm,
+  (_, href) => `<style>\n/* ${href} */\n${read(href).trimEnd()}\n</style>\n`
+);
+
+// Inline local scripts, in the order they appear.
+html = html.replace(
+  /^[ \t]*<script src="(js\/[^"]+)"><\/script>\r?\n/gm,
+  (_, srcPath) => `<script>\n/* ${srcPath} */\n${read(srcPath).trimEnd()}\n</script>\n`
+);
+
+if (/<(link|script)[^>]+(href|src)="(css|js)\//.test(html)) {
+  throw new Error('build: a local asset was not inlined — check the tag formatting in src/index.html');
+}
+
+mkdirSync(dist, { recursive: true });
+writeFileSync(join(dist, 'index.html'), html);
+
+// The Artifact host supplies <!doctype>, <head> and <body>, so hand it the
+// fragment: everything the head needs plus the body's own content.
+const headInner = html.match(/<head>([\s\S]*?)<\/head>/)[1];
+const bodyInner = html.match(/<body>([\s\S]*?)<\/body>/)[1];
+const fragment = headInner
+  .replace(/^[ \t]*<meta charset="utf-8">\r?\n/m, '')
+  .replace(/^[ \t]*<meta name="viewport"[^>]*>\r?\n/m, '')
+  .trim() + '\n' + bodyInner.trim() + '\n';
+
+writeFileSync(join(dist, 'artifact.html'), fragment);
+
+const kb = (s) => `${(Buffer.byteLength(s, 'utf8') / 1024).toFixed(1)} kB`;
+console.log(`dist/index.html    ${kb(html)}`);
+console.log(`dist/artifact.html ${kb(fragment)}`);

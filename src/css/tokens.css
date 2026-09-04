@@ -1,0 +1,155 @@
+/* ==========================================================================
+   tokens.css — the design system.
+
+   Dark-first: the bare :root block is the dark palette, because the lesson is
+   a terminal and an IDE and that is the room it belongs in. Light is a full
+   re-definition of the same tokens, never a partial override.
+   ========================================================================== */
+
+:root {
+  /* surfaces */
+  --bg:        #0E1116;
+  --panel:     #151A21;
+  --panel-2:   #1B212A;
+  --panel-3:   #212934;
+  --line:      #262E39;
+  --line-soft: #1E242D;
+
+  /* text */
+  --text:      #DDE3EB;
+  --text-2:    #AEB8C6;
+  --dim:       #7C8796;
+  --faint:     #4A5462;
+
+  /* accent + semantics */
+  --blue:      #4C9AFF;
+  --blue-soft: rgba(76, 154, 255, .14);
+  --blue-line: rgba(76, 154, 255, .40);
+  --add:       #3FB950;
+  --add-soft:  rgba(63, 185, 80, .12);
+  --del:       #F85149;
+  --del-soft:  rgba(248, 81, 73, .12);
+  --warn:      #E3B341;
+  --warn-soft: rgba(227, 179, 65, .12);
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 12px 32px -16px rgba(0, 0, 0, .75);
+
+  /* type */
+  --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --step--1: 12.5px;
+  --step-0:  15px;
+  --step-1:  17px;
+  --step-2:  21px;
+  --step-3:  27px;
+  --step-4:  34px;
+
+  --radius: 6px;
+  --radius-sm: 4px;
+
+  color-scheme: dark light;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:        #F2F5F9;
+    --panel:     #FFFFFF;
+    --panel-2:   #EDF1F6;
+    --panel-3:   #E3EAF2;
+    --line:      #D5DDE7;
+    --line-soft: #E6ECF3;
+
+    --text:      #131820;
+    --text-2:    #3A4553;
+    --dim:       #5E6B7A;
+    --faint:     #97A3B2;
+
+    --blue:      #0B62D6;
+    --blue-soft: rgba(11, 98, 214, .10);
+    --blue-line: rgba(11, 98, 214, .35);
+    --add:       #1A7F37;
+    --add-soft:  rgba(26, 127, 55, .10);
+    --del:       #CF222E;
+    --del-soft:  rgba(207, 34, 46, .09);
+    --warn:      #9A6700;
+    --warn-soft: rgba(154, 103, 0, .12);
+
+    --shadow: 0 1px 2px rgba(19, 24, 32, .06), 0 12px 32px -18px rgba(19, 24, 32, .28);
+  }
+}
+
+:root[data-theme="light"] {
+  --bg:        #F2F5F9;
+  --panel:     #FFFFFF;
+  --panel-2:   #EDF1F6;
+  --panel-3:   #E3EAF2;
+  --line:      #D5DDE7;
+  --line-soft: #E6ECF3;
+
+  --text:      #131820;
+  --text-2:    #3A4553;
+  --dim:       #5E6B7A;
+  --faint:     #97A3B2;
+
+  --blue:      #0B62D6;
+  --blue-soft: rgba(11, 98, 214, .10);
+  --blue-line: rgba(11, 98, 214, .35);
+  --add:       #1A7F37;
+  --add-soft:  rgba(26, 127, 55, .10);
+  --del:       #CF222E;
+  --del-soft:  rgba(207, 34, 46, .09);
+  --warn:      #9A6700;
+  --warn-soft: rgba(154, 103, 0, .12);
+
+  --shadow: 0 1px 2px rgba(19, 24, 32, .06), 0 12px 32px -18px rgba(19, 24, 32, .28);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button, input, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+button { cursor: pointer; }
+button[disabled] { cursor: not-allowed; opacity: .45; }
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+code, pre, kbd { font-family: var(--mono); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--faint); background-clip: content-box; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}

@@ -1,32 +1,60 @@
 # Test Registry
 
-> All tests in this project must be documented here.
-> **YOU MUST** add an entry whenever you create a new test file.
+> Integration and end-to-end tests are recorded here, along with anything they need to run.
+> Unit tests are not listed — their names are the documentation.
 
-## Format
+Run everything with `npm test`. That builds `dist/` first, because the end-to-end tests
+load the built bundle rather than the sources.
 
-Each entry requires:
-- **Test ID** — Sequential, unique identifier (e.g. `T-001`).
-- **What it tests** — The module, function, or behaviour under test.
-- **Acceptance Criteria** — What must be true for the test to pass.
-- **Type** — `unit` | `integration` | `e2e` | `snapshot`.
-- **File** — Path to the test file.
+## End-to-end
 
----
+**File:** `tests/e2e/render.test.mjs`
+**Runner:** `node --test` driving headless Chrome
+**Under test:** `dist/index.html` — the built single-file page
 
-## Registry
+These are the only tests that exercise the DOM. Everything else runs the same modules in
+Node with no browser.
 
-| Test ID | Module / Behaviour | Acceptance Criteria | Type | File |
-|---------|--------------------|---------------------|------|------|
-| T-000   | _(example) `getUserById` returns user for valid ID_ | Returns a user object with correct `id` and `email`; throws `NotFoundError` for unknown ID | unit | `src/users/user-service.test.ts` |
+### Requirements
 
-> Delete the T-000 example row when adding your first real test.
+| Requirement | Detail |
+|-------------|--------|
+| Browser | Chrome or Chromium. Looked up at `$CHROME_PATH`, then the standard macOS and Linux install paths. |
+| Build | `dist/index.html` must exist. `npm test` and `npm run test:e2e` build it first. |
+| Network | None. The page is loaded over `file://`; the Google Fonts request fails harmlessly. |
+| Fixtures | None. Each chapter seeds its own sandbox in code. |
+| Environment variables | `CHROME_PATH` — optional; only needed when Chrome is somewhere non-standard. |
 
----
+If no browser is found the whole file **skips** rather than fails, so a machine without
+Chrome still gets a green unit run. CI should set `CHROME_PATH` so the skip does not hide a
+regression.
 
-## Best Practices
+### How they work
 
-- **Test IDs are permanent** — never reuse an ID even if a test is deleted.
-- **One entry per test file**, not per `it()` block.
-- **Keep acceptance criteria behavioural** — describe observable outcomes, not implementation details.
-- Integration and e2e tests must note any required environment variables or seed data.
+Each test appends a small script to a copy of the bundle, renders it with
+`--headless --dump-dom`, and reads back whatever that script wrote into a `#HARNESS`
+element. Anything the page throws during startup surfaces as a failed assertion, because
+the harness element never appears.
+
+### Cases
+
+| Test | What it proves |
+|------|----------------|
+| the page boots and renders chapter 00 at rest | The app starts with no interaction: title, three quest steps, eleven map nodes, a live prompt, the seeded commit in the graph, and the quest card above the prose. |
+| typing in the terminal drives the engine and ticks the quest | The full loop — keystroke, command, engine mutation, re-check, re-render — and that completing a chapter awards exactly its XP. |
+| a commit redraws the history graph | The graph is derived from engine state after every command, and marks exactly one HEAD. |
+| the agent chapter opens a third pane and the agent can be run | The layout grows to three columns for chapter 09, the agent applies its edits, and `git diff` exposes both things its summary omitted. |
+| switching to a widget chapter renders its workbench | Widget chapters render their exercise, respond to clicks, and can switch to the terminal tab and back. |
+| the rules builder generates a file and writes it into the sandbox | Form input regenerates the preview, the git rules are always present, and "Write into the repo" puts the correctly-named file into the working tree. |
+
+### Known limitations
+
+- Rendering is asserted structurally, not visually. There is no screenshot comparison, so a
+  purely cosmetic regression would not be caught.
+- Only one browser engine is covered. Safari and Firefox are not exercised.
+- Each case spawns Chrome once, so the file takes roughly 12 seconds.
+
+## Integration
+
+None. The boundary between the model and the UI is thin enough that the unit tests and the
+end-to-end tests meet in the middle with nothing left over.
