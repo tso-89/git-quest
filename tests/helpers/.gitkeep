@@ -1,0 +1,3 @@
+# placeholder — shared test utilities go here
+# Add reusable test helpers, custom matchers, and mock factories in this directory.
+# Example: tests/helpers/render.tsx, tests/helpers/db.ts

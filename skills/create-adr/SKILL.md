@@ -1,0 +1,70 @@
+---
+name: create-adr
+description: >
+  Triggered when the user wants to create, write, or document an Architecture 
+  Decision Record (ADR). Also triggered for phrases like "record this decision", 
+  "document our architecture choice", or "log why we chose X".
+---
+
+# Create ADR Skill
+
+You are creating an Architecture Decision Record (ADR) following the project's standard.
+
+## Procedure
+
+1. Ask the user (or infer from context):
+   - What is the decision being recorded?
+   - What is the context / problem that necessitated this decision?
+   - What alternatives were considered?
+   - What are the consequences?
+
+2. Determine the next ADR number by listing files in `docs/ADR/`.
+
+3. Create the file `docs/ADR/ADR-NNN-<slug>.md` using the template below.
+
+4. Add a row to the ADR table under **Key Design Decisions** in `docs/ARCHITECTURE.md`.
+
+## ADR Template
+
+```markdown
+# ADR-NNN: [Title]
+
+**Date:** YYYY-MM-DD  
+**Status:** Proposed | Accepted | Deprecated | Superseded by [ADR-NNN]  
+**Deciders:** [names or team]
+
+## Context
+
+(What is the situation or problem that forced a decision?
+Include constraints, forces, and background.)
+
+## Decision
+
+(The decision that was made. State it clearly and directly.)
+
+## Rationale
+
+(Why this option? What properties make it the right choice for this context?)
+
+## Consequences
+
+### Positive
+- (benefits)
+
+### Negative  
+- (drawbacks, trade-offs)
+
+### Neutral
+- (things that change but are neither good nor bad)
+
+## Alternatives Considered
+
+| Option       | Why Rejected                        |
+|--------------|-------------------------------------|
+| Option A     | (reason)                            |
+| Option B     | (reason)                            |
+
+## References
+
+- (links to relevant docs, issues, or prior art)
+```

@@ -1,0 +1,48 @@
+---
+name: grill-me
+description: Triggered when the user wants to align on a plan through an interactive interview to resolve design decisions.
+---
+
+# Grill Me Skill
+
+You will conduct a structured, interactive design interview to help the user produce a well-reasoned plan before any code is written.
+
+## Procedure
+
+1. **Frame the problem** — Restate the user's goal in one sentence to confirm you've understood it. Ask for a correction if needed.
+2. **Ask one question at a time** — Go deep before going broad. Wait for a full response before proceeding.
+3. **Challenge assumptions** — Don't accept vague answers. If the user says "it should scale", ask "to how many users, over what timeframe?".
+4. **Surface tradeoffs** — When the user picks an approach, briefly name the key tradeoff (e.g. "That approach is simpler but means you lose X — is that acceptable?").
+5. **Cover these dimensions** (not necessarily in order — follow the conversation):
+   - **Functional requirements** — What must the system do? What are the success criteria?
+   - **Non-functional requirements** — Scale, latency, availability, security?
+   - **Data model** — What are the key entities and their relationships?
+   - **Boundaries** — What is explicitly out of scope?
+   - **Risks & unknowns** — What could go wrong? What don't we know yet?
+   - **Alternatives** — What other approaches were considered and why were they rejected?
+6. **Summarise at the end** — Once the design is stable, produce a concise summary:
+
+```
+## Design Summary
+
+**Goal:** [one sentence]
+
+**Key Decisions:**
+- [Decision + rationale]
+
+**Data Model:** [entities & relationships, brief]
+
+**Out of Scope:** [explicit exclusions]
+
+**Open Questions / Risks:**
+- [anything unresolved]
+
+**Recommended Next Step:** [what to do first]
+```
+
+## Behaviour Rules
+
+- Never ask two questions at once.
+- Don't move to the summary until all major dimensions are covered.
+- Be direct — if a design choice is risky, say so plainly.
+- If the user says "just start coding", redirect: explain that 5 minutes of alignment saves hours of rework.

@@ -1,0 +1,77 @@
+# Git & PR Workflow Rules
+
+> Applies to all git operations, commit messages, and pull request creation.
+
+## Starting New Work
+
+Before making any code changes for a new feature, fix, or other unit of work:
+
+1. **Verify git is initialized.** Run `git rev-parse --is-inside-work-tree`. If it fails, run `git init` first (and make an initial commit if the repo is empty).
+2. **Check the current branch.** Run `git branch --show-current`. If it's `main`, `master`, or `develop`, create and switch to a new branch before editing any files — never commit work-in-progress directly to these branches.
+3. **Name the branch** per the convention below, matching the type of work.
+
+This applies per unit of work, not per file — stay on the same branch for follow-up edits within the same task.
+
+## Commit Message Format
+
+Use **Conventional Commits**:
+
+```
+<type>(<scope>): <short summary>
+
+[optional body — explain WHY, not WHAT]
+
+[optional footer: BREAKING CHANGE, closes #issue]
+```
+
+### Types
+
+| Type       | When to use                                      |
+|------------|--------------------------------------------------|
+| `feat`     | New user-facing feature                          |
+| `fix`      | Bug fix                                          |
+| `docs`     | Documentation only                               |
+| `style`    | Formatting, whitespace — no logic change         |
+| `refactor` | Code restructure — no feature or bug change      |
+| `test`     | Adding or fixing tests                           |
+| `chore`    | Build system, tooling, dependencies              |
+| `perf`     | Performance improvement                          |
+| `ci`       | CI/CD configuration changes                      |
+| `revert`   | Reverts a previous commit                        |
+
+### Examples
+
+```
+feat(auth): add OAuth2 Google login
+fix(api): return 404 when user not found instead of 500
+docs(readme): update setup instructions for M1 Macs
+chore(deps): upgrade typescript to 5.5
+```
+
+## Branch Naming
+
+```
+feat/<slug>     # new feature
+fix/<slug>      # bug fix
+chore/<slug>    # tooling/dependency changes
+docs/<slug>     # documentation
+hotfix/<slug>   # urgent production fix
+```
+
+## Pull Request Checklist
+
+Before marking a PR ready for review, ensure:
+
+- [ ] Tests pass locally (`pnpm test`)
+- [ ] Lint passes (`pnpm lint`)
+- [ ] No secrets or `.env` files committed
+- [ ] PR description explains **what** and **why**
+- [ ] Linked issue (if applicable): `Closes #NNN`
+- [ ] Breaking changes documented in the description
+
+## What NOT to do
+
+- Do not squash commits without preserving meaningful history.
+- Do not force-push to `main` or `develop`.
+- Do not merge your own PRs (unless a solo project).
+- Do not leave debug logging or `console.log` in committed code.

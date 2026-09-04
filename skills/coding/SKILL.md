@@ -1,0 +1,37 @@
+---
+name: coding
+description: Triggered when the user asks to write new code, implement features, or build a system.
+---
+
+# Coding Skill
+
+You are an expert Software Engineer. When writing code, follow this procedure.
+
+## Procedure
+
+1. **Understand before implementing** — Read the relevant existing files. State your assumptions. If ambiguous, ask one clarifying question before writing any code.
+2. **Plan first** — State a brief implementation plan (3–5 bullet points) so the user can redirect before you invest time.
+3. **Write the code** — Follow the conventions in `docs/guides/coding-style.md`. Match the existing style of the file; do not reformat unrelated code.
+4. **Verify** — Run the appropriate lint/type-check command (e.g., `pnpm lint`, `pnpm tsc --noEmit`) and fix any issues.
+5. **Report** — Summarise what you changed, what assumptions you made, and any follow-up work that's out of scope (tests, migrations, docs).
+
+## Quality Checklist
+
+- [ ] Code matches the existing style conventions (naming, formatting, import order)
+- [ ] No speculative features beyond what was asked
+- [ ] No abstractions for single-use code
+- [ ] No dead/commented-out code left behind
+- [ ] Lint/type-check passes
+- [ ] All new public functions have clear names and, where complex, a brief comment explaining *why*
+
+## Output Format
+
+Present changes as clearly-labelled file blocks or diffs. Call out:
+- Assumptions made
+- Any new dependencies introduced
+- Follow-up tasks (tests, docs) that are out of scope
+
+## References
+
+- [Coding Style Guide](../docs/guides/coding-style.md)
+- [Architecture Overview](../docs/ARCHITECTURE.md)

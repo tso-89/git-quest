@@ -1,0 +1,74 @@
+---
+name: debug-issue
+description: >
+  Triggered when the user reports a bug, error, unexpected behaviour, or asks to 
+  investigate why something is broken. Also triggered for stack traces, error messages,
+  or phrases like "why is X failing", "something is wrong with Y", "help me fix this error".
+  NOT triggered for writing new features or tests.
+---
+
+# Debug Issue Skill
+
+You are systematically diagnosing and fixing a bug or error.
+
+## Scientific Debugging Method
+
+### Step 1 — Observe
+Fully understand the symptom:
+- What is the exact error message or unexpected behaviour?
+- When does it occur? Always, or under specific conditions?
+- What is the expected behaviour?
+- Collect: stack trace, logs, reproduction steps.
+
+### Step 2 — Hypothesise
+List at least 3 plausible root causes, ranked by likelihood:
+1. (Most likely) …
+2. …
+3. (Less likely) …
+
+Check the obvious first:
+- Wrong environment variable or missing config
+- Stale cache or build artifact
+- Missing or incorrect dependency version
+- Race condition or async timing issue
+
+### Step 3 — Investigate
+Test each hypothesis using available tools:
+- Read relevant source files
+- Run diagnostic commands
+- Check logs or database state
+- Add temporary debug output if necessary
+
+### Step 4 — Identify Root Cause
+State the confirmed root cause with evidence:
+> "The bug occurs because [X] — confirmed by [evidence]."
+
+### Step 5 — Fix
+Apply the **minimal** change that resolves the issue:
+- Do not refactor while debugging
+- Do not change unrelated code
+- Keep the diff as small as possible
+
+### Step 6 — Verify
+- Run the test suite
+- Manually reproduce the original steps to confirm the bug is gone
+- Check for regressions
+
+## Output Format
+
+```
+## Symptom
+(The reported problem)
+
+## Root Cause
+(Confirmed root cause + evidence)
+
+## Fix Applied
+(Exact changes made)
+
+## Verification
+(Test output / reproduction steps confirmed fixed)
+
+## Prevention (optional)
+(How to avoid this class of bug in future)
+```
