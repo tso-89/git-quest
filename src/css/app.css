@@ -203,7 +203,6 @@
   line-height: 1.65;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-left: 3px solid var(--warn);
   border-radius: var(--radius-sm);
   padding: 12px 14px;
   overflow-x: auto;
@@ -232,11 +231,11 @@
   border-radius: 3px;
   white-space: nowrap;
 }
-.note-key { border-left: 3px solid var(--blue); }
+.note-key { border-color: var(--blue-line); }
 .note-key .note-tag { background: var(--blue-soft); color: var(--blue); }
-.note-warn { border-left: 3px solid var(--del); }
+.note-warn { border-color: var(--del-line); }
 .note-warn .note-tag { background: var(--del-soft); color: var(--del); }
-.note-tip { border-left: 3px solid var(--add); }
+.note-tip { border-color: var(--add-line); }
 .note-tip .note-tag { background: var(--add-soft); color: var(--add); }
 
 /* command palette in the lesson */
@@ -451,7 +450,6 @@
   padding: 8px 11px;
   background: var(--panel-2);
   border-radius: var(--radius-sm);
-  border-left: 2px solid var(--blue);
 }
 
 .quest-done {
@@ -616,7 +614,7 @@
   margin: 14px 0 0;
   padding: 11px 13px;
   background: var(--add-soft);
-  border-left: 3px solid var(--add);
+  border: 1px solid var(--add-line);
   border-radius: var(--radius-sm);
   font-size: 13.5px;
   color: var(--text-2);
