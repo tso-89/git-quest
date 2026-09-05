@@ -589,24 +589,30 @@ code, pre, kbd { font-family: var(--mono); }
 .tray-arrow span { transform: rotate(180deg); }
 .tray-arrow::after { content: ""; }
 
-/* agent file cards */
+/* agent file table — one box with hairline rows, so four entries read as a
+   lookup rather than as four competing cards */
 .agentfiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 10px;
   margin: 20px 0;
-}
-.af {
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  padding: 12px 13px;
   background: var(--panel);
 }
-.af-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.af-n { font-weight: 600; font-size: 14px; }
-.af-f { font-size: 11px; color: var(--blue); }
-.af-w { margin: 7px 0 0; font-size: 12.5px; color: var(--dim); line-height: 1.5; }
-.af-g { margin: 7px 0 0; font-size: 12.5px; color: var(--text-2); line-height: 1.5; }
+.af {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 4px 14px;
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.af:last-child { border-bottom: 0; }
+.af-f { font-size: 11.5px; color: var(--blue); line-height: 1.5; }
+.af-n { font-weight: 600; font-size: 13.5px; }
+.af-w { margin: 5px 0 0; font-size: 12.5px; color: var(--dim); line-height: 1.5; }
+.af-g { margin: 5px 0 0; font-size: 12.5px; color: var(--text-2); line-height: 1.5; }
+
+@media (max-width: 620px) {
+  .af { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}
 
 /* ------------------------------------------------------------------- quest */
 
@@ -1206,6 +1212,10 @@ code, pre, kbd { font-family: var(--mono); }
   border-left: 1px solid var(--line);
   overflow-y: auto;
 }
+/* `display: flex` above out-ranks the browser's own [hidden] rule, so without
+   this the pane stays on screen for every chapter after 09 — wrapping into an
+   implicit grid row under the lesson column. */
+.agent-pane[hidden] { display: none; }
 .ap { display: flex; flex-direction: column; min-height: 100%; }
 .ap-head {
   display: flex;
@@ -1275,15 +1285,30 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
 
 /* ------------------------------------------------------------- responsive */
 
+/* No room for a third column here, so the agent moves under both panes rather
+   than disappearing — chapter 09 cannot be completed without its Run button. */
 @media (max-width: 1080px) {
-  .stage.has-agent { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .agent-pane { display: none; }
-  .stage.has-agent .agent-pane { display: none; }
+  .stage.has-agent {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(190px, 34vh);
+  }
+  .agent-pane {
+    grid-column: 1 / -1;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    overflow: hidden;
+  }
+  /* Head and Run button stay put; only the transcript scrolls. */
+  .ap { flex: 1; min-height: 0; }
+  .ap-thread { min-height: 0; overflow-y: auto; }
 }
 
 @media (max-width: 900px) {
   .app { height: auto; min-height: 100dvh; }
   .stage, .stage.has-agent { grid-template-columns: minmax(0, 1fr); }
+  .stage.has-agent { grid-template-rows: none; }
+  .agent-pane { overflow: visible; }
+  .ap-thread { overflow-y: visible; }
   .lesson { border-right: 0; border-bottom: 1px solid var(--line); overflow: visible; }
   .work { min-height: 520px; }
   .hud { flex-wrap: wrap; height: auto; padding: 10px 14px; gap: 12px; }
@@ -5064,14 +5089,16 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       + '</ul></figure>';
   }
 
+  // One table, not four cards. The filename leads because the filename is the
+  // thing the chapter is teaching; the agent's name is the label for it.
   function agentFilesHtml() {
     return '<div class="agentfiles">' + Agents.list.map(function (a) {
       return '<div class="af">'
-        + '<div class="af-h"><span class="af-n">' + esc(a.name) + '</span>'
-        + '<code class="af-f">' + esc(a.file) + '</code></div>'
+        + '<code class="af-f">' + esc(a.file) + '</code>'
+        + '<div class="af-b"><span class="af-n">' + esc(a.name) + '</span>'
         + '<p class="af-w">' + esc(a.where) + '</p>'
         + '<p class="af-g">' + esc(a.gitNote) + '</p>'
-        + '</div>';
+        + '</div></div>';
     }).join('') + '</div>';
   }
 

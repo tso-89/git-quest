@@ -90,14 +90,16 @@
       + '</ul></figure>';
   }
 
+  // One table, not four cards. The filename leads because the filename is the
+  // thing the chapter is teaching; the agent's name is the label for it.
   function agentFilesHtml() {
     return '<div class="agentfiles">' + Agents.list.map(function (a) {
       return '<div class="af">'
-        + '<div class="af-h"><span class="af-n">' + esc(a.name) + '</span>'
-        + '<code class="af-f">' + esc(a.file) + '</code></div>'
+        + '<code class="af-f">' + esc(a.file) + '</code>'
+        + '<div class="af-b"><span class="af-n">' + esc(a.name) + '</span>'
         + '<p class="af-w">' + esc(a.where) + '</p>'
         + '<p class="af-g">' + esc(a.gitNote) + '</p>'
-        + '</div>';
+        + '</div></div>';
     }).join('') + '</div>';
   }
 
