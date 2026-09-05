@@ -60,10 +60,15 @@ test('every chapter is numbered, named and has a quest', () => {
   });
 });
 
-test('no chapter starts already solved', () => {
+test('no chapter starts with any step already ticked', () => {
+  // done() alone only catches a wholly pre-solved chapter. A single step that
+  // the setup satisfies is worse: it ticks, then un-ticks once the learner acts.
   Chapters.list.forEach((c) => {
     const session = open(c.id);
-    assert.equal(session.done(), false, `${c.id} is complete before the learner does anything`);
+    const preSatisfied = session.chapter.quest.steps
+      .map((s, i) => (session.results()[i] ? `step ${i + 1}: ${s.label}` : null))
+      .filter(Boolean);
+    assert.deepEqual(preSatisfied, [], `${c.id} has steps satisfied before the learner does anything`);
   });
 });
 
@@ -369,4 +374,53 @@ test('isUsefulMessage rejects the messages people actually type', () => {
   });
   ['Add reading list for week two', 'Stop the export crashing on empty dates']
     .forEach((m) => assert.equal(Chapters.isUsefulMessage(m), true, `"${m}" should pass`));
+});
+
+test('07 — committing on main instead of merging does not count as a merge', () => {
+  const s = open('branches');
+  s.play('git switch -c fix/typo');
+  s.play('echo "function greet(name) { return \'Hello, \' + name; }" > app.js');
+  s.play('git commit -am "Fix the greeting typo"');
+  s.play('git switch main');
+  s.play('echo "unrelated" > other.md');
+  s.play('git add .');
+  s.play('git commit -m "Something else entirely on main"');
+
+  assert.equal(s.results()[2], false, 'back on main with three commits is not a merge');
+
+  s.play('git merge fix/typo');
+  assert.equal(s.results()[2], true, 'the merge is what satisfies it');
+});
+
+test('08 — the chapter opens on a clean tree that matches what the prose says', () => {
+  const s = open('together');
+  const status = s.eng.status();
+  assert.deepEqual(status.unstaged, [], 'no edit the learner never made');
+  assert.deepEqual(status.staged, [], 'nothing mysteriously staged');
+  assert.equal(status.ahead, 1, 'one commit ahead of origin, and one behind');
+  assert.match(s.eng.worktree()['README.md'], /On chapter eight/, 'the file says what the lesson says');
+});
+
+test('09 — the two cleanup steps do not tick until the agent has made a mess', () => {
+  const s = open('agents');
+  const before = s.results();
+  assert.equal(before[4], false, 'secrets.env is in .gitignore, but the agent has not removed it yet');
+  assert.equal(before[5], false, 'app.js has no console.log yet either');
+
+  s.play('git remote -v');
+  s.play('git commit -am "Note worktrees for later"');
+  Object.keys(AGENT_EDITS).forEach((path) => {
+    s.eng.writeFile(`${s.eng.activeRepo().root}/${path}`, AGENT_EDITS[path]);
+  });
+  s.ctx.widget.agentRan = true;
+
+  const after = s.results();
+  assert.equal(after[4], false, 'the agent dropped the line, so the step is genuinely unmet');
+  assert.equal(after[5], false, 'and it added the console.log');
+
+  s.play('git restore .gitignore');
+  s.play('git restore app.js');
+  const fixed = s.results();
+  assert.equal(fixed[4], true);
+  assert.equal(fixed[5], true);
 });

@@ -22,10 +22,11 @@
   ];
 
   function esc(s) {
-    return String(s)
+    return String(s === undefined || s === null ? '' : s)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   function prettyCwd(cwd, home) {
@@ -81,7 +82,7 @@
       lines.forEach(function (line) {
         var text = line.text === '' ? '&nbsp;' : esc(line.text);
         var deco = line.decoration ? '<span class="t-ref">' + esc(line.decoration) + '</span>' : '';
-        html += '<div class="term-line t-' + (line.cls || 'out') + '">' + text + deco + '</div>';
+        html += '<div class="term-line t-' + esc(line.cls || 'out') + '">' + text + deco + '</div>';
       });
       outEl.insertAdjacentHTML('beforeend', html);
       scrollToEnd();
@@ -99,7 +100,15 @@
       if (!silent) echoCommand(line);
       if (!line.trim()) { refreshPrompt(); scrollToEnd(); return { ok: true, lines: [] }; }
 
-      var result = commands.run(engine, line);
+      var result;
+      try {
+        result = commands.run(engine, line);
+      } catch (e) {
+        result = { ok: false, lines: [
+          { text: 'The sandbox could not run that: ' + (e && e.message ? e.message : String(e)), cls: 'del' },
+          { text: 'This is a bug in the lesson, not in what you typed. Everything else still works.', cls: 'dim' }
+        ] };
+      }
       if (result.clear) outEl.innerHTML = '';
       else print(result.lines);
 
@@ -177,6 +186,8 @@
       focus: function () { input.focus(); },
       setValue: function (v) { input.value = v; input.focus(); },
       clear: function () { outEl.innerHTML = ''; refreshPrompt(); },
+      snapshot: function () { return outEl.innerHTML; },
+      restore: function (html) { outEl.innerHTML = html || ''; refreshPrompt(); scrollToEnd(); },
       history: function () { return history.slice(); },
       refreshPrompt: refreshPrompt
     };

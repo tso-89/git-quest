@@ -248,7 +248,7 @@
       }
     });
     if (runtime.termBuffer && runtime.termBuffer.length) {
-      runtime.terminal.print(runtime.termBuffer);
+      runtime.terminal.restore(runtime.termBuffer);
     } else {
       runtime.terminal.print([
         { text: 'Sandbox ready — this is a pretend computer, not yours.', cls: 'dim' },
@@ -275,10 +275,11 @@
     }
     el.agentPane.hidden = false;
     el.stage.classList.add('has-agent');
+    el.agentPane.innerHTML = '<div data-agent-mount></div>';
     var picked = state.agents && state.agents.length ? state.agents : ['claude-code'];
     var agent = Agents.byId(picked[0]) || Agents.list[0];
     Widgets.create('agent', {
-      mount: el.agentPane,
+      mount: el.agentPane.querySelector('[data-agent-mount]'),
       engine: runtime.eng,
       state: runtime.widget,
       agentName: agent.name,
@@ -392,7 +393,7 @@
   }
 
   function persistAnswers() {
-    if (!runtime || runtime.chapter.widget !== 'rules') return;
+    if (!runtime) return;
     if (runtime.widget.selectedAgents) state.agents = runtime.widget.selectedAgents.slice();
     if (runtime.widget.answers) state.answers = JSON.parse(JSON.stringify(runtime.widget.answers));
     if (runtime.widget.username) state.username = runtime.widget.username;
@@ -413,7 +414,7 @@
     if (!tab) return;
     persistAnswers();
     if (runtime.pane === 'terminal' && runtime.terminal) {
-      runtime.termBuffer = null;
+      runtime.termBuffer = runtime.terminal.snapshot();
     }
     runtime.pane = tab.getAttribute('data-pane');
     renderWork();
@@ -470,7 +471,7 @@
       + '<div class="lesson-inner finish">'
       + '  <div class="ch-eyebrow">Complete</div>'
       + '  <h2 class="ch-title">You can use git now</h2>'
-      + '  <p class="ch-sub">' + state.xp + ' XP, ' + Object.keys(state.completed).length
+      + '  <p class="ch-sub">' + esc(state.xp) + ' XP, ' + Object.keys(state.completed).length
       + ' of ' + Chapters.list.length + ' chapters.</p>'
       + '  <div class="prose">'
       + '    <p>Everything below is a thing you actually did, not a thing you read:</p>'

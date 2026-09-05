@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>Git Quest</title>
 <meta name="description" content="An interactive git lesson for people who have never run git init, and who now work alongside AI coding agents.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1352,15 +1353,25 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
   var HOME = '/home/you';
   var EPOCH = Date.UTC(2026, 2, 3, 9, 12, 0);
 
+  /**
+   * 32-bit multiply. A plain `a * b` on two 32-bit ints overflows 2^53 and loses
+   * the low bits to float rounding, which is exactly the half a hash needs.
+   */
+  function imul32(a, b) {
+    var aHi = (a >>> 16) & 0xffff;
+    var aLo = a & 0xffff;
+    var bHi = (b >>> 16) & 0xffff;
+    var bLo = b & 0xffff;
+    return (((aLo * bLo) >>> 0) + ((((aHi * bLo) + (aLo * bHi)) << 16) >>> 0)) >>> 0;
+  }
+
   /** Deterministic 7-char hex id. Not sha-1 — it only has to look and behave like one. */
   function shortHash(input) {
     var h1 = 0x811c9dc5;
     var h2 = 0x01000193;
     for (var i = 0; i < input.length; i += 1) {
-      h1 ^= input.charCodeAt(i);
-      h1 = (h1 * 0x01000193) >>> 0;
-      h2 = (h2 ^ (input.charCodeAt(i) + i)) >>> 0;
-      h2 = (h2 * 0x85ebca6b) >>> 0;
+      h1 = imul32(h1 ^ input.charCodeAt(i), 0x01000193);
+      h2 = imul32(h2 ^ (input.charCodeAt(i) + i), 0x85ebca6b);
     }
     return (h1.toString(16) + h2.toString(16)).slice(0, 7);
   }
@@ -1412,7 +1423,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       return segments.slice(0, -1).indexOf(dir) !== -1;
     }
     if (p.indexOf('*') !== -1) {
-      var rx = new RegExp('^' + p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*') + '$');
+      var rx = new RegExp('^' + p.replace(/[.+^${}()|[\]\\?]/g, '\\$&').replace(/\*/g, '[^/]*') + '$');
       return segments.some(function (s) { return rx.test(s); });
     }
     return segments.indexOf(p) !== -1 || relPath === p;
@@ -1426,6 +1437,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
     this.fs = opts.fs ? clone(opts.fs) : {};
     this.dirs = { '/': true, '/home': true };
     this.dirs[HOME] = true;
+    this.repos = {};
     this.repo = null;
     this.remotes = {};
     this.config = { 'user.name': 'you', 'user.email': 'you@example.com' };
@@ -1522,15 +1534,28 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
 
   // ------------------------------------------------------------------ repo
 
-  /** The repository containing cwd, or null. */
+  /** The repository containing cwd, or null. The nearest enclosing root wins. */
   GitEngine.prototype.activeRepo = function () {
-    if (!this.repo) return null;
-    if (this.cwd === this.repo.root || isInside(this.repo.root, this.cwd)) return this.repo;
-    return null;
+    var cwd = this.cwd;
+    var best = null;
+    Object.keys(this.repos).forEach(function (root) {
+      if (cwd !== root && !isInside(root, cwd)) return;
+      if (!best || root.length > best.length) best = root;
+    });
+    return best === null ? null : this.repos[best];
   };
 
+  /**
+   * Create a repository at `root`, or hand back the one already there — running
+   * `git init` twice must never throw away the history of the first one.
+   * `this.repo` tracks the most recent, which is what chapter setups write to.
+   */
   GitEngine.prototype.init = function (root) {
     this.mkdirp(root);
+    if (Object.prototype.hasOwnProperty.call(this.repos, root)) {
+      this.repo = this.repos[root];
+      return this.repo;
+    }
     this.repo = {
       root: root,
       objects: {},
@@ -1541,10 +1566,11 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       merging: null,
       remote: null
     };
+    this.repos[root] = this.repo;
     return this.repo;
   };
 
-  /** Working-tree files as { relPath: content }, excluding ignored paths. */
+  /** Working-tree files as { relPath: content }. Ignored paths are included; status() filters. */
   GitEngine.prototype.worktree = function () {
     var repo = this.activeRepo();
     if (!repo) return {};
@@ -1661,12 +1687,15 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
     var remoteSha = this.remotes[repo.remote] && this.remotes[repo.remote].branches[branch];
     var localSha = repo.branches[branch];
     if (!localSha) return 0;
-    var chain = this.ancestry(localSha);
-    var idx = chain.indexOf(remoteSha);
-    return idx === -1 ? chain.length : idx;
+    var remoteChain = remoteSha ? this.ancestry(remoteSha) : [];
+    var ahead = 0;
+    this.ancestry(localSha).forEach(function (s) {
+      if (remoteChain.indexOf(s) === -1) ahead += 1;
+    });
+    return ahead;
   };
 
-  /** Newest-first list of commit shas reachable from `sha` (first-parent then merges). */
+  /** Newest-first list of commit shas reachable from `sha`, breadth-first across parents. */
   GitEngine.prototype.ancestry = function (sha) {
     var repo = this.activeRepo();
     if (!repo || !sha) return [];
@@ -1755,8 +1784,16 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
     if (Object.prototype.hasOwnProperty.call(repo.branches, ref)) return repo.branches[ref];
     var m = /^HEAD~(\d+)$/.exec(ref);
     if (m) {
-      var chain = this.ancestry(this.headSha());
-      return chain[Number(m[1])] || null;
+      // First parent only: after a merge, HEAD~2 is two commits back on this
+      // branch, not the third entry in a breadth-first walk of both sides.
+      var sha = this.headSha();
+      var back = Number(m[1]);
+      while (back > 0 && sha) {
+        var step = repo.objects[sha];
+        sha = step && step.parents[0] ? step.parents[0] : null;
+        back -= 1;
+      }
+      return sha || null;
     }
     if (ref === 'HEAD^') {
       var head = this.headCommit();
@@ -1808,7 +1845,8 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
 
   GitEngine.prototype.snapshot = function () {
     return JSON.parse(JSON.stringify({
-      cwd: this.cwd, fs: this.fs, dirs: this.dirs, repo: this.repo,
+      cwd: this.cwd, fs: this.fs, dirs: this.dirs, repos: this.repos,
+      repoRoot: this.repo ? this.repo.root : null,
       remotes: this.remotes, config: this.config, seq: this.seq, clock: this.clock
     }));
   };
@@ -1817,7 +1855,8 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
     this.cwd = snap.cwd;
     this.fs = snap.fs;
     this.dirs = snap.dirs;
-    this.repo = snap.repo;
+    this.repos = snap.repos || {};
+    this.repo = snap.repoRoot ? this.repos[snap.repoRoot] || null : null;
     this.remotes = snap.remotes;
     this.config = snap.config;
     this.seq = snap.seq;
@@ -1932,7 +1971,11 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
     var m = a.length;
     var n = b.length;
     var table = [];
-    for (var i = 0; i <= m; i += 1) table.push(new Array(n + 1).fill(0));
+    for (var i = 0; i <= m; i += 1) {
+      var row = [];
+      for (var k = 0; k <= n; k += 1) row.push(0);
+      table.push(row);
+    }
     for (i = m - 1; i >= 0; i -= 1) {
       for (var j = n - 1; j >= 0; j -= 1) {
         table[i][j] = a[i] === b[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
@@ -2074,7 +2117,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
   var git = {
     init: function (eng, cmd) {
       var target = cmd.args[0] ? resolvePath(eng.cwd, cmd.args[0]) : eng.cwd;
-      if (eng.repo && eng.repo.root === target) {
+      if (Object.prototype.hasOwnProperty.call(eng.repos, target)) {
         return ok([out('Reinitialized existing Git repository in ' + target + '/.git/', 'dim')]);
       }
       eng.init(target);
@@ -2133,21 +2176,28 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
 
     add: function (eng, cmd) {
       var guard = requireRepo(eng); if (guard) return guard;
-      if (!cmd.args.length) return err('Nothing specified, nothing added.\nhint: Maybe you wanted to say "git add ."');
+      var all = !!(cmd.flags['-A'] || cmd.flags['--all']);
+      if (!cmd.args.length && !all) return err('Nothing specified, nothing added.\nhint: Maybe you wanted to say "git add ."');
       var work = eng.worktree();
       var repo = eng.activeRepo();
       var staged = [];
       var refused = [];
+
+      function stageEverything() {
+        Object.keys(work).forEach(function (p) {
+          if (eng.isIgnored(p)) return;
+          eng.stage(p);
+          staged.push(p);
+        });
+        Object.keys(repo.index).forEach(function (p) {
+          if (!Object.prototype.hasOwnProperty.call(work, p)) { eng.stage(p); staged.push(p); }
+        });
+      }
+
+      if (all) stageEverything();
       cmd.args.forEach(function (arg) {
-        if (arg === '.' || arg === '-A' || arg === '*') {
-          Object.keys(work).forEach(function (p) {
-            if (eng.isIgnored(p)) return;
-            eng.stage(p);
-            staged.push(p);
-          });
-          Object.keys(repo.index).forEach(function (p) {
-            if (!Object.prototype.hasOwnProperty.call(work, p)) { eng.stage(p); staged.push(p); }
-          });
+        if (arg === '.' || arg === '*') {
+          stageEverything();
           return;
         }
         var rel = arg.replace(/^\.\//, '');
@@ -2183,8 +2233,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       cmd.args.forEach(function (arg) {
         var rel = arg.replace(/^\.\//, '');
         if (arg === '.') {
-          var all = toStaged ? Object.keys(repo.index) : Object.keys(repo.index);
-          all.forEach(function (p) {
+          Object.keys(repo.index).forEach(function (p) {
             if (toStaged) eng.unstage(p);
             else eng.fs[repo.root + '/' + p] = repo.index[p];
             touched.push(p);
@@ -2211,8 +2260,15 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       var guard = requireRepo(eng); if (guard) return guard;
       var repo = eng.activeRepo();
       if (cmd.flags['--cached']) {
-        cmd.args.forEach(function (a) { delete repo.index[a]; });
-        return ok([out("rm '" + cmd.args.join("' '") + "'"),
+        var cached = cmd.args.map(function (a) { return a.replace(/^\.\//, ''); });
+        var unknown = cached.filter(function (a) {
+          return !Object.prototype.hasOwnProperty.call(repo.index, a);
+        });
+        if (unknown.length) {
+          return err("fatal: pathspec '" + unknown[0] + "' did not match any files");
+        }
+        cached.forEach(function (a) { delete repo.index[a]; });
+        return ok([out("rm '" + cached.join("' '") + "'"),
           out('Removed from git, left on disk. This is how you un-commit a file you should not have added.', 'dim')]);
       }
       cmd.args.forEach(function (a) { eng.removeFile(a); delete repo.index[a]; });
@@ -2376,7 +2432,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       var base = eng.mergeBase(ourSha, theirSha);
       if (base === ourSha) {
         repo.branches[eng.currentBranch()] = theirSha;
-        eng.checkoutTree(repo.objects[theirSha].tree);
+        eng.checkoutTree(repo.objects[theirSha].tree, { keepUntracked: true });
         eng.log('merge', theirSha, 'fast-forward to ' + theirName);
         return ok([
           out('Updating ' + ourSha + '..' + theirSha),
@@ -2392,7 +2448,10 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
         'HEAD',
         theirName
       );
-      Object.keys(eng.worktree()).forEach(function (p) { delete eng.fs[repo.root + '/' + p]; });
+      Object.keys(eng.worktree()).forEach(function (p) {
+        if (!Object.prototype.hasOwnProperty.call(repo.index, p)) return;
+        delete eng.fs[repo.root + '/' + p];
+      });
       Object.keys(merged.tree).forEach(function (p) { eng.fs[repo.root + '/' + p] = merged.tree[p]; });
 
       if (merged.conflicts.length) {
@@ -3538,8 +3597,13 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
             label: 'Change app.js and commit it on the branch',
             hint: 'Overwrite <code>app.js</code>, then <code>git commit -am "Fix the greeting typo"</code>.',
             check: function (ctx) {
-              ctx.flags.branchCommit = ctx.flags.branchCommit
-                || (!!ctx.flags.branched && ctx.eng.currentBranch() !== 'main' && commitCount(ctx) >= 3);
+              var branch = ctx.eng.currentBranch();
+              if (!ctx.flags.branchCommit && ctx.flags.branched && branch && branch !== 'main'
+                && commitCount(ctx) >= 3) {
+                var repo = ctx.eng.activeRepo();
+                ctx.flags.branchCommit = true;
+                ctx.flags.branchTip = repo ? repo.branches[branch] : null;
+              }
               return !!ctx.flags.branchCommit;
             }
           },
@@ -3547,9 +3611,12 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
             label: 'Switch back to main and merge the branch in',
             hint: '<code>git switch main</code>, then <code>git merge fix/typo</code>.',
             check: function (ctx) {
-              return !!ctx.flags.branchCommit
-                && ctx.eng.currentBranch() === 'main'
-                && commitCount(ctx) >= 3;
+              if (!ctx.flags.branchCommit || ctx.eng.currentBranch() !== 'main') return false;
+              var repo = ctx.eng.activeRepo();
+              if (!repo || !ctx.flags.branchTip) return false;
+              ctx.flags.merged = ctx.flags.merged
+                || ctx.eng.ancestry(repo.branches.main).indexOf(ctx.flags.branchTip) !== -1;
+              return !!ctx.flags.merged;
             }
           },
           {
@@ -3610,6 +3677,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
         eng.checkoutTree(eng.repo.objects[base.sha].tree);
         eng.repo.index = { 'README.md': '# my-first-repo\n\nLearning git properly, finally.\n\n## Status\n\nStill learning. On chapter eight.' };
         eng.commit('Note progress through the lesson');
+        eng.checkoutTree(eng.headTree());
         eng.repo.remote = 'origin';
         eng.repo.reflog = [];
       },
@@ -3764,14 +3832,16 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
             label: 'Put secrets.env back in .gitignore',
             hint: 'The agent quietly removed that line. Write it back, or <code>git restore .gitignore</code>.',
             check: function (ctx) {
-              return /(^|\n)secrets\.env\s*(\n|$)/.test(ctx.eng.worktree()['.gitignore'] || '');
+              return !!(ctx.widget && ctx.widget.agentRan)
+                && /(^|\n)secrets\.env\s*(\n|$)/.test(ctx.eng.worktree()['.gitignore'] || '');
             }
           },
           {
             label: 'Remove the line that logs the key',
             hint: 'Look at <code>app.js</code>. <code>git restore app.js</code> throws away the whole change, which is fine here.',
             check: function (ctx) {
-              return !/console\.log/.test(ctx.eng.worktree()['app.js'] || '');
+              return !!(ctx.widget && ctx.widget.agentRan)
+                && !/console\.log/.test(ctx.eng.worktree()['app.js'] || '');
             }
           },
           {
@@ -3910,6 +3980,8 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
     return Math.floor((now || Date.now()) / 86400000);
   }
 
+  var NUMBERS = { chapter: true, xp: true, streak: true };
+
   function load() {
     var state = defaults();
     try {
@@ -3917,7 +3989,12 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       if (raw) {
         var parsed = JSON.parse(raw);
         Object.keys(state).forEach(function (k) {
-          if (parsed[k] !== undefined && parsed[k] !== null) state[k] = parsed[k];
+          if (parsed[k] === undefined || parsed[k] === null) return;
+          // Whatever is in storage is not necessarily what we wrote there.
+          if (NUMBERS[k]) state[k] = Number(parsed[k]) || 0;
+          else if (k === 'lastDay') state[k] = isFinite(parsed[k]) ? Number(parsed[k]) : null;
+          else if (typeof state[k] === 'string') state[k] = String(parsed[k]);
+          else if (typeof parsed[k] === typeof state[k]) state[k] = parsed[k];
         });
       }
     } catch (e) {
@@ -4068,7 +4145,9 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
   }
 
   function esc(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return String(s === undefined || s === null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   function truncate(s, n) {
@@ -4153,10 +4232,11 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
   ];
 
   function esc(s) {
-    return String(s)
+    return String(s === undefined || s === null ? '' : s)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   function prettyCwd(cwd, home) {
@@ -4212,7 +4292,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       lines.forEach(function (line) {
         var text = line.text === '' ? '&nbsp;' : esc(line.text);
         var deco = line.decoration ? '<span class="t-ref">' + esc(line.decoration) + '</span>' : '';
-        html += '<div class="term-line t-' + (line.cls || 'out') + '">' + text + deco + '</div>';
+        html += '<div class="term-line t-' + esc(line.cls || 'out') + '">' + text + deco + '</div>';
       });
       outEl.insertAdjacentHTML('beforeend', html);
       scrollToEnd();
@@ -4230,7 +4310,15 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       if (!silent) echoCommand(line);
       if (!line.trim()) { refreshPrompt(); scrollToEnd(); return { ok: true, lines: [] }; }
 
-      var result = commands.run(engine, line);
+      var result;
+      try {
+        result = commands.run(engine, line);
+      } catch (e) {
+        result = { ok: false, lines: [
+          { text: 'The sandbox could not run that: ' + (e && e.message ? e.message : String(e)), cls: 'del' },
+          { text: 'This is a bug in the lesson, not in what you typed. Everything else still works.', cls: 'dim' }
+        ] };
+      }
       if (result.clear) outEl.innerHTML = '';
       else print(result.lines);
 
@@ -4308,6 +4396,8 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       focus: function () { input.focus(); },
       setValue: function (v) { input.value = v; input.focus(); },
       clear: function () { outEl.innerHTML = ''; refreshPrompt(); },
+      snapshot: function () { return outEl.innerHTML; },
+      restore: function (html) { outEl.innerHTML = html || ''; refreshPrompt(); scrollToEnd(); },
       history: function () { return history.slice(); },
       refreshPrompt: refreshPrompt
     };
@@ -4343,7 +4433,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
     { id: 'chars', label: 'Letters, numbers and hyphens only', test: function (v) { return /^[A-Za-z0-9-]+$/.test(v); } },
     { id: 'edges', label: 'Does not start or end with a hyphen', test: function (v) { return !/^-|-$/.test(v); } },
     { id: 'double', label: 'No two hyphens in a row', test: function (v) { return !/--/.test(v); } },
-    { id: 'dated', label: 'Nothing you will outgrow (a year, a job, a course)', test: function (v) { return !/(19|20)\d\d|intern|student|learning|temp|test/i.test(v); } }
+    { id: 'dated', label: 'Nothing you will outgrow (a year, a job, a course)', test: function (v) { return !/(19|20)\d\d|(^|-)(intern|student|learning|temp|test)(-|$)/i.test(v); } }
   ];
 
   var ACCOUNT_STEPS = [
@@ -4691,8 +4781,14 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
 
     ctx.mount.addEventListener('click', function (e) {
       if (!e.target.closest('[data-agent-run]')) return;
+      var repo = ctx.engine.activeRepo();
+      if (!repo) {
+        var hint = ctx.mount.querySelector('.ap-hint');
+        if (hint) hint.textContent = 'The agent works in a repository. cd back into my-first-repo in the Terminal tab first.';
+        return;
+      }
       Object.keys(AGENT_EDITS).forEach(function (path) {
-        ctx.engine.writeFile(ctx.engine.activeRepo().root + '/' + path, AGENT_EDITS[path]);
+        ctx.engine.writeFile(repo.root + '/' + path, AGENT_EDITS[path]);
       });
       state.agentRan = true;
       render();
@@ -4817,7 +4913,12 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
         return;
       }
       if (e.target.closest('[data-rules-write]')) {
-        var root = ctx.engine.activeRepo().root;
+        var repo = ctx.engine.activeRepo();
+        if (!repo) {
+          status('No repository here — cd back into my-first-repo in the Terminal tab first.');
+          return;
+        }
+        var root = repo.root;
         var written = [];
         state.selectedAgents.forEach(function (agentId) {
           var name = Agents.fileNameFor(agentId);
@@ -5121,7 +5222,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       }
     });
     if (runtime.termBuffer && runtime.termBuffer.length) {
-      runtime.terminal.print(runtime.termBuffer);
+      runtime.terminal.restore(runtime.termBuffer);
     } else {
       runtime.terminal.print([
         { text: 'Sandbox ready — this is a pretend computer, not yours.', cls: 'dim' },
@@ -5148,10 +5249,11 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
     }
     el.agentPane.hidden = false;
     el.stage.classList.add('has-agent');
+    el.agentPane.innerHTML = '<div data-agent-mount></div>';
     var picked = state.agents && state.agents.length ? state.agents : ['claude-code'];
     var agent = Agents.byId(picked[0]) || Agents.list[0];
     Widgets.create('agent', {
-      mount: el.agentPane,
+      mount: el.agentPane.querySelector('[data-agent-mount]'),
       engine: runtime.eng,
       state: runtime.widget,
       agentName: agent.name,
@@ -5265,7 +5367,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
   }
 
   function persistAnswers() {
-    if (!runtime || runtime.chapter.widget !== 'rules') return;
+    if (!runtime) return;
     if (runtime.widget.selectedAgents) state.agents = runtime.widget.selectedAgents.slice();
     if (runtime.widget.answers) state.answers = JSON.parse(JSON.stringify(runtime.widget.answers));
     if (runtime.widget.username) state.username = runtime.widget.username;
@@ -5286,7 +5388,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
     if (!tab) return;
     persistAnswers();
     if (runtime.pane === 'terminal' && runtime.terminal) {
-      runtime.termBuffer = null;
+      runtime.termBuffer = runtime.terminal.snapshot();
     }
     runtime.pane = tab.getAttribute('data-pane');
     renderWork();
@@ -5343,7 +5445,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       + '<div class="lesson-inner finish">'
       + '  <div class="ch-eyebrow">Complete</div>'
       + '  <h2 class="ch-title">You can use git now</h2>'
-      + '  <p class="ch-sub">' + state.xp + ' XP, ' + Object.keys(state.completed).length
+      + '  <p class="ch-sub">' + esc(state.xp) + ' XP, ' + Object.keys(state.completed).length
       + ' of ' + Chapters.list.length + ' chapters.</p>'
       + '  <div class="prose">'
       + '    <p>Everything below is a thing you actually did, not a thing you read:</p>'

@@ -30,6 +30,8 @@
     return Math.floor((now || Date.now()) / 86400000);
   }
 
+  var NUMBERS = { chapter: true, xp: true, streak: true };
+
   function load() {
     var state = defaults();
     try {
@@ -37,7 +39,12 @@
       if (raw) {
         var parsed = JSON.parse(raw);
         Object.keys(state).forEach(function (k) {
-          if (parsed[k] !== undefined && parsed[k] !== null) state[k] = parsed[k];
+          if (parsed[k] === undefined || parsed[k] === null) return;
+          // Whatever is in storage is not necessarily what we wrote there.
+          if (NUMBERS[k]) state[k] = Number(parsed[k]) || 0;
+          else if (k === 'lastDay') state[k] = isFinite(parsed[k]) ? Number(parsed[k]) : null;
+          else if (typeof state[k] === 'string') state[k] = String(parsed[k]);
+          else if (typeof parsed[k] === typeof state[k]) state[k] = parsed[k];
         });
       }
     } catch (e) {

@@ -21,15 +21,25 @@
   var HOME = '/home/you';
   var EPOCH = Date.UTC(2026, 2, 3, 9, 12, 0);
 
+  /**
+   * 32-bit multiply. A plain `a * b` on two 32-bit ints overflows 2^53 and loses
+   * the low bits to float rounding, which is exactly the half a hash needs.
+   */
+  function imul32(a, b) {
+    var aHi = (a >>> 16) & 0xffff;
+    var aLo = a & 0xffff;
+    var bHi = (b >>> 16) & 0xffff;
+    var bLo = b & 0xffff;
+    return (((aLo * bLo) >>> 0) + ((((aHi * bLo) + (aLo * bHi)) << 16) >>> 0)) >>> 0;
+  }
+
   /** Deterministic 7-char hex id. Not sha-1 — it only has to look and behave like one. */
   function shortHash(input) {
     var h1 = 0x811c9dc5;
     var h2 = 0x01000193;
     for (var i = 0; i < input.length; i += 1) {
-      h1 ^= input.charCodeAt(i);
-      h1 = (h1 * 0x01000193) >>> 0;
-      h2 = (h2 ^ (input.charCodeAt(i) + i)) >>> 0;
-      h2 = (h2 * 0x85ebca6b) >>> 0;
+      h1 = imul32(h1 ^ input.charCodeAt(i), 0x01000193);
+      h2 = imul32(h2 ^ (input.charCodeAt(i) + i), 0x85ebca6b);
     }
     return (h1.toString(16) + h2.toString(16)).slice(0, 7);
   }
@@ -81,7 +91,7 @@
       return segments.slice(0, -1).indexOf(dir) !== -1;
     }
     if (p.indexOf('*') !== -1) {
-      var rx = new RegExp('^' + p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*') + '$');
+      var rx = new RegExp('^' + p.replace(/[.+^${}()|[\]\\?]/g, '\\$&').replace(/\*/g, '[^/]*') + '$');
       return segments.some(function (s) { return rx.test(s); });
     }
     return segments.indexOf(p) !== -1 || relPath === p;
@@ -95,6 +105,7 @@
     this.fs = opts.fs ? clone(opts.fs) : {};
     this.dirs = { '/': true, '/home': true };
     this.dirs[HOME] = true;
+    this.repos = {};
     this.repo = null;
     this.remotes = {};
     this.config = { 'user.name': 'you', 'user.email': 'you@example.com' };
@@ -191,15 +202,28 @@
 
   // ------------------------------------------------------------------ repo
 
-  /** The repository containing cwd, or null. */
+  /** The repository containing cwd, or null. The nearest enclosing root wins. */
   GitEngine.prototype.activeRepo = function () {
-    if (!this.repo) return null;
-    if (this.cwd === this.repo.root || isInside(this.repo.root, this.cwd)) return this.repo;
-    return null;
+    var cwd = this.cwd;
+    var best = null;
+    Object.keys(this.repos).forEach(function (root) {
+      if (cwd !== root && !isInside(root, cwd)) return;
+      if (!best || root.length > best.length) best = root;
+    });
+    return best === null ? null : this.repos[best];
   };
 
+  /**
+   * Create a repository at `root`, or hand back the one already there — running
+   * `git init` twice must never throw away the history of the first one.
+   * `this.repo` tracks the most recent, which is what chapter setups write to.
+   */
   GitEngine.prototype.init = function (root) {
     this.mkdirp(root);
+    if (Object.prototype.hasOwnProperty.call(this.repos, root)) {
+      this.repo = this.repos[root];
+      return this.repo;
+    }
     this.repo = {
       root: root,
       objects: {},
@@ -210,10 +234,11 @@
       merging: null,
       remote: null
     };
+    this.repos[root] = this.repo;
     return this.repo;
   };
 
-  /** Working-tree files as { relPath: content }, excluding ignored paths. */
+  /** Working-tree files as { relPath: content }. Ignored paths are included; status() filters. */
   GitEngine.prototype.worktree = function () {
     var repo = this.activeRepo();
     if (!repo) return {};
@@ -330,12 +355,15 @@
     var remoteSha = this.remotes[repo.remote] && this.remotes[repo.remote].branches[branch];
     var localSha = repo.branches[branch];
     if (!localSha) return 0;
-    var chain = this.ancestry(localSha);
-    var idx = chain.indexOf(remoteSha);
-    return idx === -1 ? chain.length : idx;
+    var remoteChain = remoteSha ? this.ancestry(remoteSha) : [];
+    var ahead = 0;
+    this.ancestry(localSha).forEach(function (s) {
+      if (remoteChain.indexOf(s) === -1) ahead += 1;
+    });
+    return ahead;
   };
 
-  /** Newest-first list of commit shas reachable from `sha` (first-parent then merges). */
+  /** Newest-first list of commit shas reachable from `sha`, breadth-first across parents. */
   GitEngine.prototype.ancestry = function (sha) {
     var repo = this.activeRepo();
     if (!repo || !sha) return [];
@@ -424,8 +452,16 @@
     if (Object.prototype.hasOwnProperty.call(repo.branches, ref)) return repo.branches[ref];
     var m = /^HEAD~(\d+)$/.exec(ref);
     if (m) {
-      var chain = this.ancestry(this.headSha());
-      return chain[Number(m[1])] || null;
+      // First parent only: after a merge, HEAD~2 is two commits back on this
+      // branch, not the third entry in a breadth-first walk of both sides.
+      var sha = this.headSha();
+      var back = Number(m[1]);
+      while (back > 0 && sha) {
+        var step = repo.objects[sha];
+        sha = step && step.parents[0] ? step.parents[0] : null;
+        back -= 1;
+      }
+      return sha || null;
     }
     if (ref === 'HEAD^') {
       var head = this.headCommit();
@@ -477,7 +513,8 @@
 
   GitEngine.prototype.snapshot = function () {
     return JSON.parse(JSON.stringify({
-      cwd: this.cwd, fs: this.fs, dirs: this.dirs, repo: this.repo,
+      cwd: this.cwd, fs: this.fs, dirs: this.dirs, repos: this.repos,
+      repoRoot: this.repo ? this.repo.root : null,
       remotes: this.remotes, config: this.config, seq: this.seq, clock: this.clock
     }));
   };
@@ -486,7 +523,8 @@
     this.cwd = snap.cwd;
     this.fs = snap.fs;
     this.dirs = snap.dirs;
-    this.repo = snap.repo;
+    this.repos = snap.repos || {};
+    this.repo = snap.repoRoot ? this.repos[snap.repoRoot] || null : null;
     this.remotes = snap.remotes;
     this.config = snap.config;
     this.seq = snap.seq;

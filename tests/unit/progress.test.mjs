@@ -136,3 +136,48 @@ test('reset clears storage and hands back a fresh state', () => {
     s.restore();
   }
 });
+
+test('numbers that came back from storage as something else are coerced', () => {
+  const s = withStorage();
+  try {
+    s.store.set(Progress.KEY, JSON.stringify({
+      xp: '<img src=x onerror=alert(1)>',
+      chapter: 'not-a-number',
+      streak: null,
+      completed: { why: true }
+    }));
+    const state = Progress.load();
+    assert.equal(state.xp, 0, 'xp must be a number, not markup waiting for innerHTML');
+    assert.equal(state.chapter, 0, 'Chapters.list[NaN] is a blank page');
+    assert.equal(state.streak, 1, 'null is skipped, so the default stands');
+    assert.deepEqual(state.completed, { why: true }, 'well-formed values still come through');
+  } finally {
+    s.restore();
+  }
+});
+
+test('a stored value of the wrong shape falls back to the default', () => {
+  const s = withStorage();
+  try {
+    s.store.set(Progress.KEY, JSON.stringify({ agents: 'claude-code', answers: 7, username: 42 }));
+    const state = Progress.load();
+    assert.deepEqual(state.agents, [], 'a string is not a list of agents');
+    assert.deepEqual(state.answers, {}, 'a number is not an answers object');
+    assert.equal(state.username, '42', 'but anything can be read as a username string');
+  } finally {
+    s.restore();
+  }
+});
+
+test('the streak still survives a round-trip through storage', () => {
+  const s = withStorage();
+  try {
+    const saved = Progress.touchStreak(Progress.defaults(), Date.now());
+    Progress.save(saved);
+    const loaded = Progress.load();
+    assert.equal(loaded.lastDay, saved.lastDay, 'lastDay defaults to null but stores a number');
+    assert.equal(Progress.touchStreak(loaded, Date.now() + DAY).streak, 2);
+  } finally {
+    s.restore();
+  }
+});

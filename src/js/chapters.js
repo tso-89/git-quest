@@ -658,8 +658,13 @@
             label: 'Change app.js and commit it on the branch',
             hint: 'Overwrite <code>app.js</code>, then <code>git commit -am "Fix the greeting typo"</code>.',
             check: function (ctx) {
-              ctx.flags.branchCommit = ctx.flags.branchCommit
-                || (!!ctx.flags.branched && ctx.eng.currentBranch() !== 'main' && commitCount(ctx) >= 3);
+              var branch = ctx.eng.currentBranch();
+              if (!ctx.flags.branchCommit && ctx.flags.branched && branch && branch !== 'main'
+                && commitCount(ctx) >= 3) {
+                var repo = ctx.eng.activeRepo();
+                ctx.flags.branchCommit = true;
+                ctx.flags.branchTip = repo ? repo.branches[branch] : null;
+              }
               return !!ctx.flags.branchCommit;
             }
           },
@@ -667,9 +672,12 @@
             label: 'Switch back to main and merge the branch in',
             hint: '<code>git switch main</code>, then <code>git merge fix/typo</code>.',
             check: function (ctx) {
-              return !!ctx.flags.branchCommit
-                && ctx.eng.currentBranch() === 'main'
-                && commitCount(ctx) >= 3;
+              if (!ctx.flags.branchCommit || ctx.eng.currentBranch() !== 'main') return false;
+              var repo = ctx.eng.activeRepo();
+              if (!repo || !ctx.flags.branchTip) return false;
+              ctx.flags.merged = ctx.flags.merged
+                || ctx.eng.ancestry(repo.branches.main).indexOf(ctx.flags.branchTip) !== -1;
+              return !!ctx.flags.merged;
             }
           },
           {
@@ -730,6 +738,7 @@
         eng.checkoutTree(eng.repo.objects[base.sha].tree);
         eng.repo.index = { 'README.md': '# my-first-repo\n\nLearning git properly, finally.\n\n## Status\n\nStill learning. On chapter eight.' };
         eng.commit('Note progress through the lesson');
+        eng.checkoutTree(eng.headTree());
         eng.repo.remote = 'origin';
         eng.repo.reflog = [];
       },
@@ -884,14 +893,16 @@
             label: 'Put secrets.env back in .gitignore',
             hint: 'The agent quietly removed that line. Write it back, or <code>git restore .gitignore</code>.',
             check: function (ctx) {
-              return /(^|\n)secrets\.env\s*(\n|$)/.test(ctx.eng.worktree()['.gitignore'] || '');
+              return !!(ctx.widget && ctx.widget.agentRan)
+                && /(^|\n)secrets\.env\s*(\n|$)/.test(ctx.eng.worktree()['.gitignore'] || '');
             }
           },
           {
             label: 'Remove the line that logs the key',
             hint: 'Look at <code>app.js</code>. <code>git restore app.js</code> throws away the whole change, which is fine here.',
             check: function (ctx) {
-              return !/console\.log/.test(ctx.eng.worktree()['app.js'] || '');
+              return !!(ctx.widget && ctx.widget.agentRan)
+                && !/console\.log/.test(ctx.eng.worktree()['app.js'] || '');
             }
           },
           {

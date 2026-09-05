@@ -23,7 +23,7 @@
     { id: 'chars', label: 'Letters, numbers and hyphens only', test: function (v) { return /^[A-Za-z0-9-]+$/.test(v); } },
     { id: 'edges', label: 'Does not start or end with a hyphen', test: function (v) { return !/^-|-$/.test(v); } },
     { id: 'double', label: 'No two hyphens in a row', test: function (v) { return !/--/.test(v); } },
-    { id: 'dated', label: 'Nothing you will outgrow (a year, a job, a course)', test: function (v) { return !/(19|20)\d\d|intern|student|learning|temp|test/i.test(v); } }
+    { id: 'dated', label: 'Nothing you will outgrow (a year, a job, a course)', test: function (v) { return !/(19|20)\d\d|(^|-)(intern|student|learning|temp|test)(-|$)/i.test(v); } }
   ];
 
   var ACCOUNT_STEPS = [
@@ -371,8 +371,14 @@
 
     ctx.mount.addEventListener('click', function (e) {
       if (!e.target.closest('[data-agent-run]')) return;
+      var repo = ctx.engine.activeRepo();
+      if (!repo) {
+        var hint = ctx.mount.querySelector('.ap-hint');
+        if (hint) hint.textContent = 'The agent works in a repository. cd back into my-first-repo in the Terminal tab first.';
+        return;
+      }
       Object.keys(AGENT_EDITS).forEach(function (path) {
-        ctx.engine.writeFile(ctx.engine.activeRepo().root + '/' + path, AGENT_EDITS[path]);
+        ctx.engine.writeFile(repo.root + '/' + path, AGENT_EDITS[path]);
       });
       state.agentRan = true;
       render();
@@ -497,7 +503,12 @@
         return;
       }
       if (e.target.closest('[data-rules-write]')) {
-        var root = ctx.engine.activeRepo().root;
+        var repo = ctx.engine.activeRepo();
+        if (!repo) {
+          status('No repository here — cd back into my-first-repo in the Terminal tab first.');
+          return;
+        }
+        var root = repo.root;
         var written = [];
         state.selectedAgents.forEach(function (agentId) {
           var name = Agents.fileNameFor(agentId);

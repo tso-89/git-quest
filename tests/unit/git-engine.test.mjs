@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const Engine = require('../../src/js/git-engine.js');
-const { GitEngine, resolvePath, ignoreMatches, HOME } = Engine;
+const { GitEngine, resolvePath, ignoreMatches, shortHash, HOME } = Engine;
 
 function repoAt(path = `${HOME}/r`) {
   const eng = new GitEngine();
@@ -226,4 +226,123 @@ test('snapshot and restore round-trip the whole world', () => {
 
   assert.equal(eng.worktree()['a.md'], 'one');
   assert.equal(eng.ancestry(eng.headSha()).length, 1);
+});
+
+test('a gitignore glob with a ? does not blow up the regex engine', () => {
+  // `?` used to reach the regex engine as a quantifier: `?boom*` threw
+  // "Nothing to repeat" out of status(), and every later command with it.
+  assert.doesNotThrow(() => ignoreMatches('?boom*', 'anything.md'));
+  assert.equal(ignoreMatches('?boom*', 'anything.md'), false);
+  assert.equal(ignoreMatches('note?.md', 'note1.md'), false, '? is a literal here, not a wildcard');
+  assert.equal(ignoreMatches('note?.md', 'note?.md'), true);
+
+  const eng = repoAt();
+  eng.writeFile('.gitignore', '?boom*');
+  eng.writeFile('a.md', 'one');
+  assert.doesNotThrow(() => eng.status());
+  assert.deepEqual(eng.status().untracked.map((f) => f.path).sort(), ['.gitignore', 'a.md']);
+});
+
+test('a second git init leaves the first repository alone', () => {
+  const eng = new GitEngine();
+  const alpha = `${HOME}/alpha`;
+  eng.init(alpha);
+  eng.cwd = alpha;
+  eng.writeFile('a.txt', 'hello');
+  eng.stage('a.txt');
+  const first = eng.commit('alpha first commit');
+
+  const beta = `${HOME}/beta`;
+  eng.init(beta);
+  eng.cwd = beta;
+  assert.ok(eng.activeRepo(), 'beta is a repository too');
+  assert.equal(eng.headSha(), null, 'and it starts empty');
+
+  eng.cwd = alpha;
+  assert.ok(eng.activeRepo(), 'alpha still exists');
+  assert.equal(eng.headSha(), first.sha, 'with its history intact');
+  assert.equal(eng.worktree()['a.txt'], 'hello');
+});
+
+test('re-initialising the same root keeps the history that is already there', () => {
+  const eng = repoAt();
+  eng.writeFile('a.md', 'one');
+  eng.stage('a.md');
+  const first = eng.commit('one');
+  eng.init(eng.cwd);
+  assert.equal(eng.headSha(), first.sha);
+});
+
+test('the nearest enclosing repository wins', () => {
+  const eng = new GitEngine();
+  const outer = `${HOME}/outer`;
+  const inner = `${HOME}/outer/inner`;
+  eng.init(outer);
+  eng.init(inner);
+  eng.cwd = inner;
+  assert.equal(eng.activeRepo().root, inner);
+  eng.cwd = outer;
+  assert.equal(eng.activeRepo().root, outer);
+});
+
+test('HEAD~n walks first parents, so a merge does not send it down the other branch', () => {
+  const eng = repoAt();
+  eng.writeFile('a.md', 'one');
+  eng.stage('a.md');
+  const one = eng.commit('one');
+
+  eng.repo.branches.feat = one.sha;
+  eng.repo.HEAD = { ref: 'feat' };
+  eng.writeFile('f.md', 'feat');
+  eng.stage('f.md');
+  const onFeat = eng.commit('two on feat');
+
+  eng.repo.HEAD = { ref: 'main' };
+  eng.checkoutTree(eng.repo.objects[one.sha].tree);
+  eng.writeFile('m.md', 'main');
+  eng.stage('m.md');
+  const onMain = eng.commit('three on main');
+
+  eng.repo.index = { ...eng.headTree(), 'f.md': 'feat' };
+  eng.commit("Merge branch 'feat'", [onFeat.sha]);
+
+  assert.equal(eng.resolveRef('HEAD~1'), onMain.sha, 'one back is the last commit on main');
+  assert.equal(eng.resolveRef('HEAD~2'), one.sha, 'two back is the fork point, not the other branch');
+  assert.notEqual(eng.resolveRef('HEAD~2'), onFeat.sha);
+  assert.equal(eng.resolveRef('HEAD~9'), null, 'walking off the end is null, not a wrong commit');
+});
+
+test('ahead counts only the commits the remote does not have', () => {
+  const eng = repoAt();
+  eng.writeFile('a.md', 'one');
+  eng.stage('a.md');
+  const base = eng.commit('base');
+
+  eng.remotes.origin = { url: 'x', branches: {}, objects: {} };
+  eng.repo.remote = 'origin';
+  eng.repo.index = { 'a.md': 'theirs' };
+  const theirs = eng.commit('theirs');
+  eng.remotes.origin.branches.main = theirs.sha;
+  eng.ancestry(theirs.sha).forEach((sha) => { eng.remotes.origin.objects[sha] = eng.repo.objects[sha]; });
+
+  // Rewind to the fork and make one commit of our own: 1 ahead, 1 behind.
+  eng.repo.branches.main = base.sha;
+  eng.checkoutTree(eng.repo.objects[base.sha].tree);
+  eng.writeFile('b.md', 'mine');
+  eng.stage('b.md');
+  eng.commit('mine');
+
+  assert.equal(eng.aheadCount(), 1, 'not the whole chain just because the remote sha is not an ancestor');
+});
+
+test('shortHash keeps the low bits of its multiply', () => {
+  const seen = {};
+  let collisions = 0;
+  for (let i = 0; i < 20000; i += 1) {
+    const h = shortHash(`commit-${i}`);
+    if (seen[h]) collisions += 1;
+    seen[h] = true;
+  }
+  assert.equal(collisions, 0, 'sequential inputs must not collide');
+  assert.match(shortHash('a'), /^[0-9a-f]{7}$/);
 });

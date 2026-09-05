@@ -93,7 +93,11 @@
     var m = a.length;
     var n = b.length;
     var table = [];
-    for (var i = 0; i <= m; i += 1) table.push(new Array(n + 1).fill(0));
+    for (var i = 0; i <= m; i += 1) {
+      var row = [];
+      for (var k = 0; k <= n; k += 1) row.push(0);
+      table.push(row);
+    }
     for (i = m - 1; i >= 0; i -= 1) {
       for (var j = n - 1; j >= 0; j -= 1) {
         table[i][j] = a[i] === b[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
@@ -235,7 +239,7 @@
   var git = {
     init: function (eng, cmd) {
       var target = cmd.args[0] ? resolvePath(eng.cwd, cmd.args[0]) : eng.cwd;
-      if (eng.repo && eng.repo.root === target) {
+      if (Object.prototype.hasOwnProperty.call(eng.repos, target)) {
         return ok([out('Reinitialized existing Git repository in ' + target + '/.git/', 'dim')]);
       }
       eng.init(target);
@@ -294,21 +298,28 @@
 
     add: function (eng, cmd) {
       var guard = requireRepo(eng); if (guard) return guard;
-      if (!cmd.args.length) return err('Nothing specified, nothing added.\nhint: Maybe you wanted to say "git add ."');
+      var all = !!(cmd.flags['-A'] || cmd.flags['--all']);
+      if (!cmd.args.length && !all) return err('Nothing specified, nothing added.\nhint: Maybe you wanted to say "git add ."');
       var work = eng.worktree();
       var repo = eng.activeRepo();
       var staged = [];
       var refused = [];
+
+      function stageEverything() {
+        Object.keys(work).forEach(function (p) {
+          if (eng.isIgnored(p)) return;
+          eng.stage(p);
+          staged.push(p);
+        });
+        Object.keys(repo.index).forEach(function (p) {
+          if (!Object.prototype.hasOwnProperty.call(work, p)) { eng.stage(p); staged.push(p); }
+        });
+      }
+
+      if (all) stageEverything();
       cmd.args.forEach(function (arg) {
-        if (arg === '.' || arg === '-A' || arg === '*') {
-          Object.keys(work).forEach(function (p) {
-            if (eng.isIgnored(p)) return;
-            eng.stage(p);
-            staged.push(p);
-          });
-          Object.keys(repo.index).forEach(function (p) {
-            if (!Object.prototype.hasOwnProperty.call(work, p)) { eng.stage(p); staged.push(p); }
-          });
+        if (arg === '.' || arg === '*') {
+          stageEverything();
           return;
         }
         var rel = arg.replace(/^\.\//, '');
@@ -344,8 +355,7 @@
       cmd.args.forEach(function (arg) {
         var rel = arg.replace(/^\.\//, '');
         if (arg === '.') {
-          var all = toStaged ? Object.keys(repo.index) : Object.keys(repo.index);
-          all.forEach(function (p) {
+          Object.keys(repo.index).forEach(function (p) {
             if (toStaged) eng.unstage(p);
             else eng.fs[repo.root + '/' + p] = repo.index[p];
             touched.push(p);
@@ -372,8 +382,15 @@
       var guard = requireRepo(eng); if (guard) return guard;
       var repo = eng.activeRepo();
       if (cmd.flags['--cached']) {
-        cmd.args.forEach(function (a) { delete repo.index[a]; });
-        return ok([out("rm '" + cmd.args.join("' '") + "'"),
+        var cached = cmd.args.map(function (a) { return a.replace(/^\.\//, ''); });
+        var unknown = cached.filter(function (a) {
+          return !Object.prototype.hasOwnProperty.call(repo.index, a);
+        });
+        if (unknown.length) {
+          return err("fatal: pathspec '" + unknown[0] + "' did not match any files");
+        }
+        cached.forEach(function (a) { delete repo.index[a]; });
+        return ok([out("rm '" + cached.join("' '") + "'"),
           out('Removed from git, left on disk. This is how you un-commit a file you should not have added.', 'dim')]);
       }
       cmd.args.forEach(function (a) { eng.removeFile(a); delete repo.index[a]; });
@@ -537,7 +554,7 @@
       var base = eng.mergeBase(ourSha, theirSha);
       if (base === ourSha) {
         repo.branches[eng.currentBranch()] = theirSha;
-        eng.checkoutTree(repo.objects[theirSha].tree);
+        eng.checkoutTree(repo.objects[theirSha].tree, { keepUntracked: true });
         eng.log('merge', theirSha, 'fast-forward to ' + theirName);
         return ok([
           out('Updating ' + ourSha + '..' + theirSha),
@@ -553,7 +570,10 @@
         'HEAD',
         theirName
       );
-      Object.keys(eng.worktree()).forEach(function (p) { delete eng.fs[repo.root + '/' + p]; });
+      Object.keys(eng.worktree()).forEach(function (p) {
+        if (!Object.prototype.hasOwnProperty.call(repo.index, p)) return;
+        delete eng.fs[repo.root + '/' + p];
+      });
       Object.keys(merged.tree).forEach(function (p) { eng.fs[repo.root + '/' + p] = merged.tree[p]; });
 
       if (merged.conflicts.length) {

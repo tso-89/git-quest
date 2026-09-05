@@ -289,3 +289,115 @@ test('help lists what the sandbox understands', () => {
   assert.match(helped.text, /git\s+init\s+status\s+add/);
   assert.match(helped.text, /Nothing you type here touches your real computer/);
 });
+
+test('git add -A and --all stage everything, like git add .', () => {
+  // parse() routes every -flag into cmd.flags, so these used to fall through to
+  // "Nothing specified, nothing added" with unreachable handling behind them.
+  ['-A', '--all'].forEach((flag) => {
+    const eng = fresh();
+    eng.writeFile('a.md', 'one');
+    eng.writeFile('b.md', 'two');
+    const res = run(eng, `git add ${flag}`);
+    assert.equal(res.ok, true, `git add ${flag} should work`);
+    assert.deepEqual(Object.keys(eng.repo.index).sort(), ['a.md', 'b.md']);
+  });
+});
+
+test('git add -A still honours .gitignore', () => {
+  const eng = fresh();
+  eng.writeFile('.gitignore', 'secret.env');
+  eng.writeFile('secret.env', 'KEY=1');
+  eng.writeFile('app.js', 'ok');
+  run(eng, 'git add -A');
+  assert.deepEqual(Object.keys(eng.repo.index).sort(), ['.gitignore', 'app.js']);
+});
+
+test('git add with no paths and no flag still explains itself', () => {
+  const eng = fresh();
+  eng.writeFile('a.md', 'one');
+  const res = run(eng, 'git add');
+  assert.equal(res.ok, false);
+  assert.match(res.text, /Nothing specified/);
+});
+
+test('git rm --cached refuses a file git has never heard of', () => {
+  const eng = fresh();
+  eng.writeFile('a.md', 'one');
+  run(eng, 'git add a.md');
+
+  const ghost = run(eng, 'git rm --cached ghost.md');
+  assert.equal(ghost.ok, false, 'a false success here is the wrong failure mode');
+  assert.match(ghost.text, /did not match any files/);
+  assert.deepEqual(Object.keys(eng.repo.index), ['a.md'], 'and nothing was removed');
+
+  const real = run(eng, 'git rm --cached a.md');
+  assert.equal(real.ok, true);
+  assert.deepEqual(Object.keys(eng.repo.index), []);
+});
+
+test('a merge does not delete untracked files that were sitting there', () => {
+  const eng = fresh();
+  eng.writeFile('a.md', 'base');
+  run(eng, 'git add .');
+  run(eng, 'git commit -m "base"');
+
+  run(eng, 'git switch -c feat');
+  eng.writeFile('feat.md', 'theirs');
+  run(eng, 'git add .');
+  run(eng, 'git commit -m "on the branch"');
+
+  run(eng, 'git switch main');
+  eng.writeFile('a.md', 'ours');
+  run(eng, 'git add .');
+  run(eng, 'git commit -m "on main"');
+
+  eng.writeFile('scratch.txt', 'my notes, not committed');
+  run(eng, 'git merge feat');
+  assert.equal(eng.worktree()['scratch.txt'], 'my notes, not committed');
+});
+
+test('a fast-forward merge leaves untracked files alone too', () => {
+  const eng = fresh();
+  eng.writeFile('a.md', 'base');
+  run(eng, 'git add .');
+  run(eng, 'git commit -m "base"');
+
+  run(eng, 'git switch -c feat');
+  eng.writeFile('feat.md', 'theirs');
+  run(eng, 'git add .');
+  run(eng, 'git commit -m "on the branch"');
+  run(eng, 'git switch main');
+
+  eng.writeFile('scratch.txt', 'my notes');
+  run(eng, 'git merge feat');
+  assert.equal(eng.worktree()['scratch.txt'], 'my notes');
+  assert.equal(eng.worktree()['feat.md'], 'theirs');
+});
+
+test('git init twice does not erase the repository you were in', () => {
+  const eng = fresh();
+  eng.writeFile('a.md', 'one');
+  run(eng, 'git add .');
+  run(eng, 'git commit -m "first"');
+
+  const again = run(eng, 'git init');
+  assert.equal(again.ok, true);
+  assert.match(again.text, /Reinitialized/);
+
+  assert.equal(run(eng, 'git status').ok, true, 'the repo is still a repo');
+  assert.match(run(eng, 'git log').text, /first/);
+});
+
+test('a repository made inside another does not swallow the first', () => {
+  const eng = fresh();
+  eng.writeFile('a.md', 'one');
+  run(eng, 'git add .');
+  run(eng, 'git commit -m "outer first commit"');
+
+  run(eng, 'mkdir side');
+  run(eng, 'cd side');
+  run(eng, 'git init');
+  run(eng, 'cd ..');
+
+  assert.match(run(eng, 'git log').text, /outer first commit/);
+});

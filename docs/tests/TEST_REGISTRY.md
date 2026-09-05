@@ -42,7 +42,7 @@ the harness element never appears.
 
 | Test | What it proves |
 |------|----------------|
-| the page boots and renders chapter 00 at rest | The app starts with no interaction: title, three quest steps, eleven map nodes, a live prompt, the seeded commit in the graph, and the quest card above the prose. |
+| the page boots and renders chapter 00 at rest | The app starts with no interaction: title, five quest steps, eleven map nodes, a live prompt, the seeded commit in the graph, and the quest card above the prose. |
 | typing in the terminal drives the engine and ticks the quest | The full loop — keystroke, command, engine mutation, re-check, re-render — and that completing a chapter awards exactly its XP. |
 | a commit redraws the history graph | The graph is derived from engine state after every command, and marks exactly one HEAD. |
 | the agent chapter opens a third pane and the agent can be run | The layout grows to three columns for chapter 09, the agent applies its edits, and `git diff` exposes both things its summary omitted. |

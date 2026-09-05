@@ -10,7 +10,7 @@
     "test": "npm run build && node --test \"tests/**/*.test.mjs\"",
     "test:unit": "node --test \"tests/unit/*.test.mjs\"",
     "test:e2e": "npm run build && node --test \"tests/e2e/*.test.mjs\"",
-    "lint": "node --check src/js/app.js && node --check scripts/build.mjs && node --check scripts/serve.mjs",
+    "lint": "for f in src/js/*.js scripts/*.mjs; do node --check \"$f\" || exit 1; done",
     "dev": "node scripts/serve.mjs"
   },
   "engines": {

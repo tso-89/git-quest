@@ -20,6 +20,9 @@ const dist = join(root, 'dist');
 
 const read = (relative) => readFileSync(join(src, relative), 'utf8');
 
+// A literal `</script` inside inlined JS ends the block, whatever the JS meant.
+const closeSafe = (js) => js.replace(/<\/script/gi, '<\\/script');
+
 let html = read('index.html');
 
 // Inline local stylesheets. The Google Fonts link stays remote by design.
@@ -31,7 +34,7 @@ html = html.replace(
 // Inline local scripts, in the order they appear.
 html = html.replace(
   /^[ \t]*<script src="(js\/[^"]+)"><\/script>\r?\n/gm,
-  (_, srcPath) => `<script>\n/* ${srcPath} */\n${read(srcPath).trimEnd()}\n</script>\n`
+  (_, srcPath) => `<script>\n/* ${srcPath} */\n${closeSafe(read(srcPath).trimEnd())}\n</script>\n`
 );
 
 if (/<(link|script)[^>]+(href|src)="(css|js)\//.test(html)) {
