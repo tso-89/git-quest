@@ -234,10 +234,15 @@ test('07 — branch, merge, revert, and find it again', () => {
   s.play('git commit -am "Fix the greeting typo"');
   s.play('git switch main');
   s.play('git merge fix/typo');
+  assert.equal(s.results()[3], false, 'the merge is still only local');
+  s.play('git push');
+  assert.equal(s.results()[3], true);
   s.play('git revert HEAD');
+  assert.equal(s.results()[3], true, 'the push step stays done after the revert moves main on');
   s.play('git reflog');
   assertSolved(s);
   assert.match(s.eng.headCommit().message, /^Revert /);
+  assert.equal(s.eng.remotes.origin.branches.main, s.eng.headCommit().parents[0], 'GitHub holds the merge');
 });
 
 test('07 — committing on main instead of a branch does not satisfy the branch step', () => {
@@ -257,7 +262,7 @@ test('08 — pull, hit the conflict, resolve it by hand, push', () => {
   assert.deepEqual(s.results().slice(0, 3), [true, true, false]);
 
   s.play('echo "# my-first-repo" > README.md');
-  s.play('echo "Shipped v1. Still learning, chapter eight of ten." >> README.md');
+  s.play('echo "Shipped v1. Still learning, on chapter eight." >> README.md');
   s.play('git add README.md');
   s.play('git commit -m "Merge release note with my progress note"');
   s.play('git push');
@@ -277,11 +282,12 @@ test('08 — committing with the markers still in the file is refused', () => {
   assert.equal(s.results()[2], false, 'so the quest still marks it unresolved');
 });
 
-test('09 — commit first, run the agent, then catch what it hid', () => {
+test('09 — check the remote, commit first, run the agent, then catch what it hid', () => {
   const s = open('agents');
+  s.play('git remote -v');
   s.play('git status');
   s.play('git commit -am "Note worktrees for later"');
-  assert.equal(s.results()[0], true);
+  assert.deepEqual(s.results().slice(0, 2), [true, true]);
 
   // The agent panel writes its proposal into the working tree.
   Object.keys(AGENT_EDITS).forEach((path) => {
@@ -289,8 +295,8 @@ test('09 — commit first, run the agent, then catch what it hid', () => {
   });
   s.ctx.widget.agentRan = true;
 
-  assert.equal(s.results()[3], false, 'secrets.env is no longer ignored');
-  assert.equal(s.results()[4], false, 'app.js now logs the key');
+  assert.equal(s.results()[4], false, 'secrets.env is no longer ignored');
+  assert.equal(s.results()[5], false, 'app.js now logs the key');
 
   s.play('git diff');
   s.play('git restore .gitignore');
@@ -307,6 +313,7 @@ test('09 — commit first, run the agent, then catch what it hid', () => {
 
 test('09 — accepting the agent wholesale leaves the quest unfinished', () => {
   const s = open('agents');
+  s.play('git remote -v');
   s.play('git commit -am "Note worktrees for later"');
   Object.keys(AGENT_EDITS).forEach((path) => {
     s.eng.writeFile(`${s.eng.activeRepo().root}/${path}`, AGENT_EDITS[path]);

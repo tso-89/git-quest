@@ -83,6 +83,8 @@
     var lines = [
       '## Git rules',
       '',
+      '- This project lives on GitHub. If `git remote -v` shows no remote, or the folder is',
+      '  not a git repository at all, stop and tell me before changing anything.',
       '- Before starting a new task, check the branch. If it is `main`, create one:',
       '  `feat/<slug>`, `fix/<slug>`, `docs/<slug>` or `chore/<slug>`.',
       '- Never commit directly to `main`.',

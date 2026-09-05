@@ -2778,6 +2778,8 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
     var lines = [
       '## Git rules',
       '',
+      '- This project lives on GitHub. If `git remote -v` shows no remote, or the folder is',
+      '  not a git repository at all, stop and tell me before changing anything.',
       '- Before starting a new task, check the branch. If it is `main`, create one:',
       '  `feat/<slug>`, `fix/<slug>`, `docs/<slug>` or `chore/<slug>`.',
       '- Never commit directly to `main`.',
@@ -2943,7 +2945,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
     {
       id: 'why',
       title: 'The twenty-second undo',
-      subtitle: 'Why anyone bothers with this',
+      subtitle: 'What git is, and what this lesson will teach you',
       xp: 100,
       pane: 'terminal',
       terminalHint: 'Type a command here and press Enter',
@@ -2957,8 +2959,14 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       },
       blocks: [
         { p: 'Everyone arrives here the same way. A folder with <code>report.docx</code>, <code>report_v2.docx</code>, <code>report_v2_FINAL.docx</code>, and <code>report_v2_FINAL_actually.docx</code> — and no idea which one the good paragraph is in.' },
-        { p: 'Version control fixes that. But there is a newer reason, and it is more urgent. An AI agent can rewrite nine files in ninety seconds. It will tell you what it did in three cheerful sentences. Those sentences are a <em>summary</em>, and summaries leave things out.' },
+        { p: '<strong>Git</strong> is a program that remembers every version of a folder. You tell it when to take a snapshot; it keeps every snapshot you ever took, with your name, the date and a line about why. You can compare any two of them and go back to any one of them. That is what <em>version control</em> means, and it is all git does.' },
+        { p: 'People have used it for that for twenty years. But there is a newer reason, and it is more urgent. An AI agent can rewrite nine files in ninety seconds. It will tell you what it did in three cheerful sentences. Those sentences are a <em>summary</em>, and summaries leave things out.' },
         { note: 'Git is the only thing standing between "the agent changed something" and "the agent changed <em>exactly these forty lines</em>, and here is the button that puts them back."', kind: 'key' },
+
+        { h: 'How this lesson works' },
+        { p: 'Eleven short chapters. Each one teaches one idea on this side of the screen, then hands you a <strong>quest</strong> — the box with the numbered steps above this text — that you finish by doing the thing on the other side. Steps tick themselves off as you go, you collect XP, and the next chapter is one click away. The map along the top shows where you are.' },
+        { p: 'By the end you will have started a repository, put it on GitHub, run the daily save-and-share loop until it is boring, made and merged a branch, undone a mistake, resolved a conflict with a teammate, caught an agent slipping something past you, and written the rules file that stops it happening again. Every one of those is a thing you will have <em>done</em>, not read about.' },
+        { note: 'Nothing to install and no account needed to start. Chapter 01 walks you through the GitHub account when you get there.', kind: 'tip' },
 
         { h: 'First: that black panel on the right' },
         { p: 'That is a <strong>terminal</strong>. You will also hear it called the command line, the shell, or the console — all the same thing. It is a box where you type the name of something you want done, press Enter, and the computer does it and prints an answer back.' },
@@ -3109,8 +3117,9 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
         { h: 'Local first, remote second' },
         { p: 'Almost everything happens on your machine. <code>git commit</code> does not talk to the internet. You can work on a plane for six hours, commit forty times, and only then push it all to GitHub in one go.' },
         { p: 'The copy on GitHub is called a <strong>remote</strong>. It is a peer, not a boss — it just happens to be the copy everyone agrees to sync through.' },
-        { note: 'Each commit is a full snapshot of the folder, not a list of edits. That is why checking out an old commit is instant, and why nothing is ever half-restored.', kind: 'key' },
+        { note: 'Each commit is a full snapshot of the folder, not a list of edits. That is why going back to an old commit is instant, and why nothing is ever half-restored.', kind: 'key' },
         { h: 'Make one' },
+        { p: 'Saving takes two commands. <code>git add</code> picks which files go into the next snapshot; <code>git commit</code> takes the snapshot and attaches your message to it. Why it is two steps and not one is Chapter 05\'s job. For now: add, then commit.' },
         { cmds: [
           { cmd: 'mkdir my-first-repo', desc: 'an ordinary folder' },
           { cmd: 'cd my-first-repo', desc: 'step into it' },
@@ -3259,7 +3268,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
         { p: '<strong>The command line.</strong> GitHub\'s own tool, <code>gh</code>, creates the repository and wires up the connection in one step. Once you have used it twice you will never open the website for this again.' },
         { note: '<code>origin</code> is not a keyword. It is just the conventional nickname for "the copy on the server". You could call it <code>github</code> or <code>backup</code>. Everyone calls it <code>origin</code>, so call it <code>origin</code>.', kind: 'key' },
         { h: 'What push means' },
-        { p: '<code>git push</code> sends any commits your local branch has that the remote does not. It never sends uncommitted work — if you have not committed it, pushing does nothing for it. That surprises everyone once.' },
+        { p: '<code>git push</code> sends any commits your copy has that the remote does not. It never sends uncommitted work — if you have not committed it, pushing does nothing for it. That surprises everyone once.' },
         { cmds: [
           { cmd: 'gh repo create my-first-repo --public', desc: 'create it on GitHub and add the remote' },
           { cmd: 'gh repo create my-first-repo --private', desc: 'or keep it to yourself' },
@@ -3331,7 +3340,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
         { p: 'Every change lives in exactly one of those three places. <code>git status</code> is the command that tells you which — and it is the one you should run more than any other. Run it when you are lost. Run it before you commit. Run it after an agent finishes.' },
         { h: 'Why staging exists' },
         { p: 'It feels like an extra step until the first time you need it. You have edited four files and only two of them belong in the same commit. Staging lets you commit those two, then the other two separately, so each commit is one idea that can be undone on its own.' },
-        { note: 'Working directory, then <code>git add</code>, then staging area, then <code>git commit</code>, then history, then <code>git push</code>, then GitHub. Four arrows. That is the loop.', kind: 'key' },
+        { note: 'Working directory, then <code>git add</code>, then staging area, then <code>git commit</code>, then history, then <code>git push</code>, then GitHub. Three arrows, and <code>git status</code> to tell you where you are standing. That is the loop.', kind: 'key' },
         { h: 'The message is the point' },
         { p: 'In six months the diff will still be there but your memory will not. "fix" tells you nothing. "Stop the export crashing on empty date fields" tells you everything — and it tells an agent reading your history what this project cares about.' },
         { cmds: [
@@ -3393,7 +3402,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
           }
         ]
       },
-      outro: 'You now know enough git to work alone, safely, forever. The next chapters are about other people and other machines.'
+      outro: 'You now know enough git to work alone, safely, forever. Next: the same loop with buttons, then branches, other people, and agents.'
     },
 
     // ------------------------------------------------------------------- 06
@@ -3455,8 +3464,8 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
     // ------------------------------------------------------------------- 07
     {
       id: 'branches',
-      title: 'Branches, and undoing anything',
-      subtitle: 'Cheap parallel universes, and the four panic buttons',
+      title: 'Branch, merge, push — and undo anything',
+      subtitle: 'Cheap parallel universes, and six ways to undo',
       xp: 180,
       pane: 'terminal',
       setup: function (eng) {
@@ -3469,13 +3478,24 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
         eng.writeFile(root + '/app.js', 'function greet(name) {\n  return "Helo, " + name;\n}\n');
         eng.stage('app.js');
         eng.commit('Add greet function');
+        eng.remotes.origin = {
+          url: 'https://github.com/you/my-first-repo.git',
+          branches: { main: eng.headSha() },
+          objects: {}
+        };
+        eng.ancestry(eng.headSha()).forEach(function (s) {
+          eng.remotes.origin.objects[s] = eng.repo.objects[s];
+        });
+        eng.repo.remote = 'origin';
       },
       blocks: [
         { p: 'A branch is a sticky label pointing at one commit. That is all. Creating one copies nothing and takes no time, which is why the advice is always "just make a branch" — it costs you nothing to be wrong on one.' },
         { p: 'You are on <code>main</code> right now. Make <code>fix/typo</code>, and both labels point at the same commit. Commit once, and <code>fix/typo</code> moves forward while <code>main</code> stays put. That gap is the whole feature.' },
+        { p: 'When the work on the branch turns out good, <code>git merge</code> brings it back into <code>main</code>. When it does not, delete the branch and <code>main</code> never knew.' },
+        { p: 'Notice that none of this has touched GitHub. Branching, committing and merging are all local — the remote only learns about any of it when you <code>git push</code>. That is the whole rhythm of working in git: branch, commit, merge, push. The first three can happen a hundred times on a plane; the last one is what makes it real to anyone else.' },
         { note: 'This matters more with agents than without. "Let it try, and throw the branch away if it goes badly" is only a cheap sentence when the branch was cheap to make.', kind: 'key' },
-        { h: 'The four panic buttons' },
-        { p: 'Learn which one you need by what you are trying to undo. This table is worth keeping.' },
+        { h: 'The six panic buttons' },
+        { p: 'Learn which one you need by what you are trying to undo. You used the first one in Chapter 00. This table is worth keeping.' },
         { compare: {
           heads: ['I want to…', 'Use'],
           rows: [
@@ -3496,13 +3516,14 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
           { cmd: 'git commit -am "Fix the greeting typo"', desc: '-am stages tracked files and commits' },
           { cmd: 'git switch main', desc: 'go back' },
           { cmd: 'git merge fix/typo', desc: 'bring the work across' },
+          { cmd: 'git push', desc: 'now GitHub has the merge too' },
           { cmd: 'git revert HEAD', desc: 'undo the last commit, safely' },
           { cmd: 'git reflog', desc: 'everywhere HEAD has been' }
         ] }
       ],
       quest: {
-        title: 'Branch, merge, undo, and find it again',
-        brief: 'Do a piece of work on a branch, merge it, undo it safely, then prove nothing was lost.',
+        title: 'Branch, merge, push, undo, and find it again',
+        brief: 'Do a piece of work on a branch, merge it, push it to GitHub, undo it safely, then prove nothing was lost.',
         steps: [
           {
             label: 'Create a branch and switch to it',
@@ -3532,6 +3553,19 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
             }
           },
           {
+            label: 'Push main so GitHub has the merge too',
+            hint: '<code>git push</code>. Everything so far was local; this is the step that makes it real.',
+            check: function (ctx) {
+              var repo = ctx.eng.activeRepo();
+              var remote = repo && ctx.eng.remotes[repo.remote];
+              ctx.flags.pushedMerge = ctx.flags.pushedMerge
+                || (!!ctx.flags.branchCommit && !!remote
+                  && ctx.eng.ancestry(repo.branches.main).length >= 3
+                  && remote.branches.main === repo.branches.main);
+              return !!ctx.flags.pushedMerge;
+            }
+          },
+          {
             label: 'Undo that work with revert, not reset',
             hint: '<code>git revert HEAD</code>. It adds a new commit rather than erasing one.',
             check: function (ctx) { return /^Revert /.test(messageOf(ctx, 0)); }
@@ -3550,7 +3584,7 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
     {
       id: 'together',
       title: 'When someone else has been editing',
-      subtitle: 'Pull, conflict, resolve, pull request',
+      subtitle: 'Pull, conflict, resolve',
       xp: 180,
       pane: 'terminal',
       setup: function (eng) {
@@ -3574,26 +3608,23 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
         eng.repo.branches.main = base.sha;
         eng.repo.HEAD = { ref: 'main' };
         eng.checkoutTree(eng.repo.objects[base.sha].tree);
-        eng.repo.index = { 'README.md': '# my-first-repo\n\nLearning git properly, finally.\n\n## Status\n\nStill learning. Chapter eight of ten.' };
+        eng.repo.index = { 'README.md': '# my-first-repo\n\nLearning git properly, finally.\n\n## Status\n\nStill learning. On chapter eight.' };
         eng.commit('Note progress through the lesson');
         eng.repo.remote = 'origin';
         eng.repo.reflog = [];
       },
       blocks: [
-        { p: 'Sam has pushed a change to <code>README.md</code> while you were working on the same lines. Neither of you did anything wrong. Git will not guess which version is right, and you would not want it to.' },
+        { p: 'Sam, a teammate, has pushed a change to <code>README.md</code> while you were editing the same lines. <code>git pull</code> is the opposite of push: it fetches the commits the remote has that you do not, and combines them with yours. Usually that just works. Not this time — and neither of you did anything wrong. Git will not guess which version is right, and you would not want it to.' },
         { h: 'What a conflict actually looks like' },
         { p: 'When <code>git pull</code> cannot combine two edits automatically, it writes <em>both</em> versions into the file with markers between them, and stops. The file on disk becomes something like this:' },
-        { code: '<<<<<<< HEAD\nStill learning. Chapter eight of ten.\n=======\nShipped the first version. Docs to follow.\n>>>>>>> origin/main' },
+        { code: '<<<<<<< HEAD\nStill learning. On chapter eight.\n=======\nShipped the first version. Docs to follow.\n>>>>>>> origin/main' },
         { p: 'Everything between the first marker and the row of equals signs is yours. Everything after the equals signs is theirs. Your job is to write the version that should exist — often a combination of both — and delete all three marker lines.' },
         { note: 'A conflict is not an error. It is git refusing to make an editorial decision on your behalf.', kind: 'key' },
-        { h: 'Then: pull requests' },
-        { p: 'On a team you rarely push straight to <code>main</code>. You push a branch and open a <strong>pull request</strong>: a page that shows your commits, the full diff, and a place for people to argue about it before it lands. It is a code review with a merge button attached.' },
-        { p: 'Every agent-written change is worth this treatment, even when you work alone. A pull request is the one place you reliably read a diff in full.' },
         { cmds: [
           { cmd: 'git pull', desc: 'fetch their work and combine it with yours' },
           { cmd: 'cat README.md', desc: 'look at the markers' },
           { cmd: 'echo "# my-first-repo" > README.md', desc: 'start rewriting the file cleanly' },
-          { cmd: 'echo "Shipped v1. Still learning, chapter eight of ten." >> README.md', desc: 'the version that should exist' },
+          { cmd: 'echo "Shipped v1. Still learning, on chapter eight." >> README.md', desc: 'the version that should exist' },
           { cmd: 'git add README.md', desc: 'tell git this one is resolved' },
           { cmd: 'git commit -m "Merge release note with my progress note"', desc: 'finish the merge' },
           { cmd: 'git push', desc: 'send the resolution up' }
@@ -3683,15 +3714,17 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       },
       blocks: [
         { p: 'This is the chapter the rest of the lesson was for. An agent writes faster than you can read, does not get tired, and is confidently wrong occasionally rather than never. Git is what makes that an acceptable trade.' },
-        { h: 'Four habits, in order of how much they will save you' },
-        { p: '<strong>1. Commit before you prompt.</strong> A clean working tree before the agent starts means everything it changes shows up in <code>git status</code> as its work, not tangled with yours. It also means <code>git restore .</code> is a complete undo.' },
-        { p: '<strong>2. Read the diff, not the summary.</strong> The summary is written by the thing that made the change. It is usually accurate and occasionally omits the interesting part. <code>git diff</code> cannot omit anything.' },
-        { p: '<strong>3. One branch per task.</strong> So "this went badly, delete it" is one command instead of an afternoon.' },
-        { p: '<strong>4. Keep secrets structurally impossible.</strong> An agent that can read your files can read <code>.env</code>, and an agent that can commit can commit it. <code>.gitignore</code> is the guardrail, and it belongs in the repository so every agent gets the same one.' },
+        { h: 'Five habits, in order of how much they will save you' },
+        { p: '<strong>1. Start in a repository with a remote.</strong> An agent will happily work for an hour in a folder with no <code>.git</code>, and nothing it does there can be undone. When you start a project with an agent, make the first instruction "initialise git, make the first commit, and create a GitHub repository for it" — then check its work yourself with <code>git remote -v</code> and <code>git log</code> before asking for anything else. Everything below assumes this happened.' },
+        { p: '<strong>2. Commit before you prompt.</strong> A clean working tree before the agent starts means everything it changes shows up in <code>git status</code> as its work, not tangled with yours. It also means <code>git restore .</code> is a complete undo.' },
+        { p: '<strong>3. Read the diff, not the summary.</strong> The summary is written by the thing that made the change. It is usually accurate and occasionally omits the interesting part. <code>git diff</code> cannot omit anything.' },
+        { p: '<strong>4. One branch per task.</strong> So "this went badly, delete it" is one command instead of an afternoon.' },
+        { p: '<strong>5. Keep secrets structurally impossible.</strong> An agent that can read your files can read <code>.env</code>, and an agent that can commit can commit it. <code>.gitignore</code> is the guardrail, and it belongs in the repository so every agent gets the same one.' },
         { note: 'Two agents at once on the same folder will fight. <code>git worktree add ../feature-b feat/b</code> gives each one its own directory sharing one history — the real answer to running things in parallel.', kind: 'tip' },
         { h: 'Now catch one' },
         { p: 'The panel on the right is an agent. Ask it to tidy your project. It will do roughly what you asked, report cheerfully, and slip in one change you would not have approved. Find it.' },
         { cmds: [
+          { cmd: 'git remote -v', desc: 'is there a GitHub copy? there should be' },
           { cmd: 'git status', desc: 'start clean before you prompt' },
           { cmd: 'git commit -am "Note worktrees for later"', desc: 'commit your own work first' },
           { cmd: 'git diff', desc: 'the truth about what the agent did' },
@@ -3701,8 +3734,13 @@ body.is-levelled .hud-level { animation: pop .5s ease; }
       ],
       quest: {
         title: 'Catch what the summary left out',
-        brief: 'Commit your own work, run the agent, read the diff, and stop the thing it got wrong from being committed.',
+        brief: 'Check the repo has a remote, commit your own work, run the agent, read the diff, and stop the thing it got wrong from being committed.',
         steps: [
+          {
+            label: 'Confirm the repository has a remote',
+            hint: '<code>git remote -v</code>. If this printed nothing, the first job would be creating the GitHub repo — see Chapter 04.',
+            check: function (ctx) { return typed(ctx, /^git\s+remote/); }
+          },
           {
             label: 'Commit your own changes before prompting',
             hint: 'You have an uncommitted edit to <code>notes.md</code>. <code>git commit -am "Note worktrees for later"</code> first.',

@@ -47,6 +47,7 @@ test('the git rules are always present, whichever agent', () => {
     assert.match(file, /## Git rules/, `${a.id} lost its git rules`);
     assert.match(file, /Never commit directly to `main`/);
     assert.match(file, /Never run `git push --force` on `main`/);
+    assert.match(file, /git remote -v/, `${a.id} should make the agent confirm a remote exists`);
     assert.match(file, /Never commit `\.env`, credentials, API keys or tokens/);
     assert.match(file, /Run `pnpm test` before every commit/);
   });
