@@ -60,6 +60,36 @@
       + '</figure>';
   }
 
+  /**
+   * A labelled breakdown of the prompt. Chapter 00 leans on this: a learner who
+   * has never used a terminal cannot be expected to know which part of
+   * `you@quest ~/story $` is theirs to type.
+   */
+  function anatomyHtml() {
+    var parts = [
+      { text: 'you@quest', cls: 'an-user', label: 'who you are', sub: 'always "you" in here' },
+      { text: '~/story', cls: 'an-where', label: 'the folder you are in', sub: '~ is your home folder' },
+      { text: '$', cls: 'an-dollar', label: 'your turn', sub: 'type after this, never before' },
+      { text: 'cat story.md', cls: 'an-cmd', label: 'what you type', sub: 'then press Enter' }
+    ];
+    // The prompt is shown once, whole, exactly as it appears in the terminal.
+    // The labels sit underneath in their own grid, so a long label can never
+    // stretch a column and push the end of the line out of view.
+    return '<figure class="anatomy">'
+      + '<code class="an-line" aria-label="The prompt: you at quest, tilde slash story, dollar sign, '
+      + 'then the command cat story.md">'
+      + parts.map(function (p) {
+        return '<span class="an-part ' + p.cls + '">' + esc(p.text) + '</span>';
+      }).join(' ')
+      + '</code>'
+      + '<ul class="an-keys">'
+      + parts.map(function (p) {
+        return '<li><span class="an-swatch ' + p.cls + '">' + esc(p.text) + '</span>'
+          + '<b>' + esc(p.label) + '</b><span class="an-sub">' + esc(p.sub) + '</span></li>';
+      }).join('')
+      + '</ul></figure>';
+  }
+
   function agentFilesHtml() {
     return '<div class="agentfiles">' + Agents.list.map(function (a) {
       return '<div class="af">'
@@ -83,10 +113,11 @@
       return '<pre class="codeblock">' + esc(block.code) + '</pre>';
     }
     if (block.cmds) {
-      return '<div class="cmds"><div class="cmds-h">Commands for this chapter — click one to load it</div>'
+      return '<div class="cmds"><div class="cmds-h">Click a command to load it into the terminal</div>'
         + block.cmds.map(function (c) {
           return '<button class="cmd" data-cmd="' + esc(c.cmd) + '">'
-            + '<code>' + esc(c.cmd) + '</code><span>' + esc(c.desc) + '</span></button>';
+            + '<code>' + esc(c.cmd) + '</code><span>' + esc(c.desc) + '</span>'
+            + '<span class="cmd-go" aria-hidden="true">load</span></button>';
         }).join('') + '</div>';
     }
     if (block.compare) {
@@ -98,6 +129,7 @@
         }).join('')
         + '</tbody></table>';
     }
+    if (block.anatomy) return anatomyHtml();
     if (block.trays) return traysHtml();
     if (block.agentFiles) return agentFilesHtml();
     return '';
@@ -208,6 +240,7 @@
       engine: runtime.eng,
       commands: Commands,
       home: HOME,
+      placeholder: chapter.terminalHint || '',
       onCommand: function (line) {
         runtime.history.push(line.trim());
         drawGraph();
@@ -218,8 +251,9 @@
       runtime.terminal.print(runtime.termBuffer);
     } else {
       runtime.terminal.print([
-        { text: 'Sandbox ready. Nothing here touches your machine.', cls: 'dim' },
-        { text: 'Type `help` for what this shell understands.', cls: 'dim' },
+        { text: 'Sandbox ready — this is a pretend computer, not yours.', cls: 'dim' },
+        { text: 'Click a command on the left, or type one here, then press Enter.', cls: 'dim' },
+        { text: 'Type `help` any time to see everything this shell understands.', cls: 'dim' },
         { text: '' }
       ]);
     }

@@ -68,6 +68,7 @@
       subtitle: 'Why anyone bothers with this',
       xp: 100,
       pane: 'terminal',
+      terminalHint: 'Type a command here and press Enter',
       setup: function (eng) {
         var root = HOME + '/story';
         eng.init(root);
@@ -80,24 +81,60 @@
         { p: 'Everyone arrives here the same way. A folder with <code>report.docx</code>, <code>report_v2.docx</code>, <code>report_v2_FINAL.docx</code>, and <code>report_v2_FINAL_actually.docx</code> — and no idea which one the good paragraph is in.' },
         { p: 'Version control fixes that. But there is a newer reason, and it is more urgent. An AI agent can rewrite nine files in ninety seconds. It will tell you what it did in three cheerful sentences. Those sentences are a <em>summary</em>, and summaries leave things out.' },
         { note: 'Git is the only thing standing between "the agent changed something" and "the agent changed <em>exactly these forty lines</em>, and here is the button that puts them back."', kind: 'key' },
-        { h: 'Try it before you understand it' },
-        { p: 'On the right is a real-feeling terminal. Nothing you type touches your computer. There is a file called <code>story.md</code> that has already been saved into git\'s memory once.' },
-        { p: 'Wreck it. Overwrite it, or delete it outright — then get it back.' },
+
+        { h: 'First: that black panel on the right' },
+        { p: 'That is a <strong>terminal</strong>. You will also hear it called the command line, the shell, or the console — all the same thing. It is a box where you type the name of something you want done, press Enter, and the computer does it and prints an answer back.' },
+        { p: 'It is not more dangerous than clicking. It is just fussier about spelling. And this particular one is a pretend computer that lives inside this web page: it has no connection to your real files, no internet, and no way to touch anything you care about. There is nothing here you can break.' },
+        { note: 'Everything below can be run by clicking it in the grey boxes on this page — you never have to type anything from memory. Clicking loads the command into the terminal; then press Enter.', kind: 'tip' },
+
+        { h: 'Reading the line before the cursor' },
+        { p: 'Before the part you type, the terminal tells you who you are and where you are:' },
+        { anatomy: true },
+        { p: '<code>~</code> is shorthand for your home folder — the one your documents live in. So <code>~/story</code> means "a folder called <strong>story</strong>, inside my home folder". That folder is where you are standing right now, and it has exactly one file in it.' },
+        { p: 'The <code>$</code> is the terminal saying <em>your turn</em>. You type after it, never before it.' },
+
+        { h: 'Look around before you touch anything' },
+        { p: 'Two commands to start, and neither one changes a single thing. <code>ls</code> <strong>lists</strong> what is in the folder you are standing in. <code>cat</code> prints a file to the screen so you can read it.' },
         { cmds: [
-          { cmd: 'cat story.md', desc: 'read the file' },
-          { cmd: 'echo "ruined" > story.md', desc: 'overwrite it with junk' },
-          { cmd: 'rm story.md', desc: 'or just delete it' },
-          { cmd: 'git status', desc: 'ask git what it noticed' },
+          { cmd: 'ls', desc: 'what is in this folder?' },
+          { cmd: 'cat story.md', desc: 'show me what is in that file' }
+        ] },
+        { p: 'That file has already been saved into git\'s memory once. Git has a copy of exactly how it looks right now, whether you like the next thing you do to it or not.' },
+
+        { h: 'Now wreck it, on purpose' },
+        { p: 'The interesting character here is <code>&gt;</code>. On its own, <code>echo</code> just prints whatever you give it straight back at you. Put a <code>&gt;</code> and a filename after it and the text goes <strong>into that file instead</strong> — wiping out everything that was there before. It is the fastest way to ruin a file, which is exactly what we want.' },
+        { p: 'Or skip the subtlety and delete the file outright with <code>rm</code>, short for remove. Either one is fine. Be as destructive as you like.' },
+        { cmds: [
+          { cmd: 'echo "ruined" > story.md', desc: 'replace everything in the file with the word ruined' },
+          { cmd: 'rm story.md', desc: 'or delete the file completely' }
+        ] },
+
+        { h: 'Then get it back' },
+        { p: '<code>git status</code> asks git what it has noticed since its last saved copy. <code>git restore</code> puts a file back the way git remembers it.' },
+        { cmds: [
+          { cmd: 'git status', desc: 'git, what changed?' },
+          { cmd: 'cat story.md', desc: 'confirm the damage is real' },
           { cmd: 'git restore story.md', desc: 'put it back the way it was' }
-        ] }
+        ] },
+        { note: 'Nothing you do in this sandbox is permanent either. The <strong>Reset chapter</strong> button at the top right puts everything back to how it started, as many times as you want.', kind: 'tip' }
       ],
       quest: {
-        title: 'Break it, then get it back',
-        brief: 'Destroy <code>story.md</code>, confirm git noticed, and restore it. Twenty seconds.',
+        title: 'Look, break, then undo',
+        brief: 'Five commands. The first two only look at things. Then you destroy a file and get it back.',
         steps: [
           {
-            label: 'Damage or delete story.md',
-            hint: 'Try <code>echo "ruined" &gt; story.md</code> — or <code>rm story.md</code> if you want to be dramatic.',
+            label: 'See what is in the folder',
+            hint: 'Click <code>ls</code> in the first grey box above — or type it into the terminal yourself — then press Enter.',
+            check: function (ctx) { return typed(ctx, /^ls(\s|$)/); }
+          },
+          {
+            label: 'Read the file',
+            hint: 'Click or type <code>cat story.md</code>, then press Enter. It prints the file to the screen.',
+            check: function (ctx) { return typed(ctx, /^cat\s+story\.md/); }
+          },
+          {
+            label: 'Ruin story.md — overwrite it, or delete it',
+            hint: '<code>echo "ruined" &gt; story.md</code> replaces the contents. <code>rm story.md</code> deletes it outright. Either counts.',
             check: function (ctx) {
               var work = ctx.eng.worktree();
               var head = ctx.eng.headTree();
@@ -106,13 +143,13 @@
             }
           },
           {
-            label: 'Ask git what it saw',
-            hint: 'Type <code>git status</code>. It compares what is on disk against what it remembers.',
+            label: 'Ask git what it noticed',
+            hint: 'Type <code>git status</code>. It compares what is on disk right now against the copy it remembers.',
             check: function (ctx) { return typed(ctx, /^git\s+status/); }
           },
           {
-            label: 'Restore it',
-            hint: '<code>git restore story.md</code> copies the remembered version back over the broken one.',
+            label: 'Put it back',
+            hint: '<code>git restore story.md</code> copies the remembered version back over the broken one. Then <code>cat story.md</code> to see that it worked.',
             check: function (ctx) {
               var work = ctx.eng.worktree();
               var head = ctx.eng.headTree();
@@ -121,7 +158,7 @@
           }
         ]
       },
-      outro: 'That is the whole promise. Everything from here is detail about how git remembers, and how to make it remember usefully.'
+      outro: 'That is the whole promise, and you just used it. Everything from here is detail about how git remembers, and how to make it remember usefully.'
     },
 
     // ------------------------------------------------------------------- 01

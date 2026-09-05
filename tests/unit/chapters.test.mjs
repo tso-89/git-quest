@@ -72,8 +72,9 @@ test('total XP matches the sum of the chapters', () => {
   assert.equal(Chapters.totalXp, sum);
 });
 
-test('00 — break a file and restore it', () => {
+test('00 — look around, break a file, restore it', () => {
   const s = open('why');
+  s.play('ls');
   s.play('cat story.md');
   s.play('echo "ruined" > story.md');
   s.play('git status');
@@ -84,18 +85,55 @@ test('00 — break a file and restore it', () => {
 
 test('00 — deleting the file outright also counts, and restore brings it back', () => {
   const s = open('why');
+  s.play('ls');
+  s.play('cat story.md');
   s.play('rm story.md');
   s.play('git status');
-  assert.deepEqual(s.results(), [true, true, false]);
+  assert.deepEqual(s.results(), [true, true, true, true, false]);
   s.play('git restore story.md');
   assertSolved(s);
 });
 
 test('00 — restoring without breaking anything does not count', () => {
   const s = open('why');
+  s.play('ls');
+  s.play('cat story.md');
   s.play('git status');
   s.play('git restore story.md');
-  assert.equal(s.results()[2], false, 'the third step needs real damage first');
+  assert.equal(s.results()[4], false, 'the last step needs real damage first');
+});
+
+test('00 — opens with looking, not typing something destructive', () => {
+  const chapter = Chapters.byId('why');
+
+  // The first two steps must be safe. A learner who has never opened a terminal
+  // should get to run something harmless before being asked to destroy a file.
+  const s = open('why');
+  s.play('ls');
+  s.play('cat story.md');
+  assert.deepEqual(s.results().slice(0, 2), [true, true]);
+  assert.equal(
+    s.eng.worktree()['story.md'],
+    s.eng.headTree()['story.md'],
+    'nothing has been damaged yet'
+  );
+
+  // And the prose has to explain the terminal before the first command block.
+  const firstCmdBlock = chapter.blocks.findIndex((b) => b.cmds);
+  const preamble = chapter.blocks.slice(0, firstCmdBlock)
+    .map((b) => b.p || b.h || b.note || '').join(' ');
+  assert.match(preamble, /terminal/i, 'chapter 00 must say what a terminal is');
+  assert.match(preamble, /command line/i, 'and name it the way a newcomer will have heard it');
+  assert.match(preamble, /nothing here you can break/i, 'and say it is safe');
+  assert.ok(
+    chapter.blocks.some((b) => b.anatomy),
+    'and break down the prompt, so "$" and "~/story" are not a mystery'
+  );
+
+  // Every command the quest needs is one click away.
+  const offered = chapter.blocks.filter((b) => b.cmds).flatMap((b) => b.cmds.map((c) => c.cmd));
+  ['ls', 'cat story.md', 'git status', 'git restore story.md']
+    .forEach((c) => assert.ok(offered.includes(c), `${c} should be clickable, not from memory`));
 });
 
 test('01 — the sign-up checklist and username rules', () => {

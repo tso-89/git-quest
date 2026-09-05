@@ -39,6 +39,7 @@
     var engine = options.engine;
     var commands = options.commands;
     var home = options.home || '/home/you';
+    var placeholder = options.placeholder || '';
     var onCommand = options.onCommand || function () {};
 
     var history = [];
@@ -59,6 +60,9 @@
     var outEl = mount.querySelector('[data-term-out]');
     var psEl = mount.querySelector('[data-term-ps]');
     var input = mount.querySelector('[data-term-input]');
+    // Chapter 00 uses this to say "you can type in here" to someone who has
+    // never seen a terminal and may not realise the line is an input at all.
+    if (placeholder) input.placeholder = placeholder;
 
     function promptText() {
       return 'you@quest ' + prettyCwd(engine.cwd, home) + ' $';

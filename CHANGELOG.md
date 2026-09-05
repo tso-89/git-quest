@@ -11,6 +11,9 @@ First release.
 ### Added
 
 - Eleven chapters, each ending in a quest the learner completes by doing rather than reading.
+- Chapter 00 assumes no prior terminal experience: it says what a terminal is, breaks down
+  the prompt so `$` and `~/story` are not a mystery, explains what `>` and `rm` do before
+  asking anyone to use them, and opens the quest with two commands that only look at things.
 - A simulated git engine with a working tree, staging area, commit graph, branches,
   three-way merges with real conflict markers, `revert`, `reset`, and a reflog.
 - A terminal that understands a useful slice of `git`, `gh` and a POSIX shell, with command

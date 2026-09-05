@@ -258,7 +258,7 @@
 }
 .cmd {
   display: grid;
-  grid-template-columns: minmax(0, auto) 1fr;
+  grid-template-columns: minmax(0, auto) 1fr auto;
   gap: 14px;
   align-items: baseline;
   width: 100%;
@@ -273,6 +273,73 @@
 .cmd:hover { background: var(--panel-2); }
 .cmd code { font-size: 12.5px; color: var(--blue); white-space: nowrap; }
 .cmd span { font-size: 13px; color: var(--dim); }
+.cmd-go {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--faint);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 2px 8px;
+  justify-self: end;
+  white-space: nowrap;
+}
+.cmd:hover .cmd-go { color: var(--blue); border-color: var(--blue-line); }
+
+/* Anatomy of the prompt. The line renders exactly as the terminal shows it;
+   the legend explains each part without being able to distort the line. */
+.anatomy {
+  margin: 20px 0;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.an-line {
+  display: block;
+  font-size: 13px;
+  line-height: 1.6;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.an-user { color: var(--add); }
+.an-where { color: var(--blue); }
+.an-dollar { color: var(--warn); }
+.an-cmd { color: var(--text); }
+
+.an-keys {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(184px, 1fr));
+  gap: 12px 20px;
+}
+.an-keys li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.an-swatch {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  margin-bottom: 3px;
+  overflow-wrap: anywhere;
+}
+.an-keys b {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.an-sub { font-size: 11.5px; line-height: 1.4; color: var(--dim); }
 
 /* comparison tables */
 .compare {

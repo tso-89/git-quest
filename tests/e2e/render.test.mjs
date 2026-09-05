@@ -100,7 +100,7 @@ test('the page boots and renders chapter 00 at rest', { skip }, () => {
   `);
 
   assert.equal(out.title, 'The twenty-second undo');
-  assert.equal(out.steps, '3');
+  assert.equal(out.steps, '5');
   assert.equal(out.nodes, '11', 'one map node per chapter');
   assert.equal(out.prompt, 'true');
   assert.equal(out.graph, '1', 'the seeded commit is drawn');
@@ -111,6 +111,10 @@ test('typing in the terminal drives the engine and ticks the quest', { skip }, (
   const out = renderWithScript(`
     ${TYPE_HELPER}
     record('before', stepStates());
+    record('placeholder', document.querySelector('.term-input').placeholder);
+    type('ls');
+    type('cat story.md');
+    record('looked', stepStates());
     type('echo "ruined" > story.md');
     type('git status');
     record('mid', stepStates());
@@ -121,9 +125,11 @@ test('typing in the terminal drives the engine and ticks the quest', { skip }, (
     record('restored', /Restored 1 file/.test(document.querySelector('.term-out').textContent));
   `);
 
-  assert.equal(out.before, 'todo,todo,todo');
-  assert.equal(out.mid, 'done,done,todo');
-  assert.equal(out.after, 'done,done,done');
+  assert.equal(out.before, 'todo,todo,todo,todo,todo');
+  assert.match(out.placeholder, /Type a command/, 'the input says it is an input');
+  assert.equal(out.looked, 'done,done,todo,todo,todo', 'looking around is safe and counts');
+  assert.equal(out.mid, 'done,done,done,done,todo');
+  assert.equal(out.after, 'done,done,done,done,done');
   assert.equal(out.complete, 'true');
   assert.equal(out.xp, '100 / 1590 XP', 'finishing the chapter awards its XP');
   assert.equal(out.restored, 'true');
@@ -133,6 +139,17 @@ test('a commit redraws the history graph', { skip }, () => {
   const out = renderWithScript(`
     ${TYPE_HELPER}
     record('before', document.querySelectorAll('.g-node').length);
+    record('anatomy', document.querySelectorAll('.anatomy .an-part').length);
+    record('anatomyKeys', document.querySelectorAll('.anatomy .an-keys li').length);
+    var line = document.querySelector('.an-line');
+    record('anatomyFits', line.scrollWidth <= line.clientWidth + 1);
+    record('loadChips', document.querySelectorAll('.cmd .cmd-go').length > 0);
+    // Baseline alignment gives boxes of different heights different offsetTops
+    // even on one line, so ask whether they overlap vertically instead.
+    var row = document.querySelector('.cmd');
+    var codeRect = row.querySelector('code').getBoundingClientRect();
+    var chipRect = row.querySelector('.cmd-go').getBoundingClientRect();
+    record('chipOnSameRow', codeRect.bottom > chipRect.top && chipRect.bottom > codeRect.top);
     type('echo "new line" >> story.md');
     type('git add story.md');
     type('git commit -m "Add a line to the piece"');
@@ -141,6 +158,11 @@ test('a commit redraws the history graph', { skip }, () => {
   `);
 
   assert.equal(out.before, '1');
+  assert.equal(out.anatomy, '4', 'the prompt breakdown renders its four parts');
+  assert.equal(out.anatomyKeys, '4', 'each part gets a label');
+  assert.equal(out.anatomyFits, 'true', 'the prompt line is not clipped');
+  assert.equal(out.loadChips, 'true', 'commands advertise that clicking loads them');
+  assert.equal(out.chipOnSameRow, 'true', 'the load chip sits beside the command, not under it');
   assert.equal(out.after, '2', 'the new commit appears in the graph');
   assert.equal(out.head, '1', 'exactly one node is marked HEAD');
 });
