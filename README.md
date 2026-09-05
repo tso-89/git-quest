@@ -92,12 +92,40 @@ this was chosen from.
 
 ## Deploying
 
-`dist/index.html` is a complete, self-contained page. Serve it from anywhere — GitHub
-Pages, S3, a USB stick. The only external request is the Google Fonts stylesheet, and the
-page falls back to system faces without it.
+`dist/index.html` is a complete, self-contained page: one file, no server, no runtime
+build. It contains no relative or root-absolute asset paths, so it runs correctly at any
+URL — a domain root, a `/repo-name/` subpath, or straight off the filesystem. The only
+external request is the Google Fonts stylesheet, and the page falls back to system faces
+without it.
 
 `dist/artifact.html` is the same page as a body fragment, for hosts that supply their own
 document shell.
+
+### GitHub Pages
+
+`.github/workflows/pages.yml` builds and publishes on every push to `main`. To turn it on:
+
+1. Push the repo to GitHub.
+2. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
+3. Push to `main`, or run the workflow by hand from the Actions tab.
+
+The site lands at `https://<user>.github.io/<repo>/`. The workflow runs the unit tests
+before it builds, so a broken lesson does not reach your testers.
+
+Pages on a **private** repo needs a paid GitHub plan. A public repo works on the free tier
+— which is usually the right choice here anyway, since the whole thing is a teaching
+resource.
+
+### Other ways to hand it to someone
+
+| Route | Good for | Cost of setup |
+|-------|----------|---------------|
+| GitHub Pages | A durable link you can keep updating | One workflow, already written |
+| Netlify / Vercel / Cloudflare Pages | Same, plus previews per branch | Point it at the repo, build `npm run build`, publish `dist` |
+| Send `dist/index.html` | One or two people, or no internet | Attach the file; they double-click it |
+
+That last one is worth remembering: the built file works from `file://`, so it can go in an
+email, a Slack message, or a USB stick and still run in full.
 
 ## Documentation
 
