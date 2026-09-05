@@ -26,6 +26,10 @@ secrets/
 .mcp.json.local
 
 # Agent-local config — machine-specific, never commit
+# .mcp.json holds absolute paths to the machine's own MCP binaries, so it is
+# local-only: a clone would get broken paths, and a real username, either way.
+.mcp.json
+.impeccable/
 .claude/settings.local.json
 .claude/*.lock
 .claude/scheduled_tasks.lock

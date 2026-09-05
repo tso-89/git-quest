@@ -156,6 +156,8 @@ Path-specific rules live in `docs/rules/` and apply to all code in this project:
 - Every chapter in `src/js/chapters.js` needs a walkthrough test in
   `tests/unit/chapters.test.mjs` proving it can be completed — and that it is not already
   complete before the learner does anything.
+- Lesson content uses placeholder identities only — `jamie-doe`, `acme`, `you@example.com`.
+  Never a real person's name, handle or email, including the repository owner's.
 
 ## Skills
 

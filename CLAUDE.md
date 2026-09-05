@@ -51,5 +51,7 @@ See `.claude/agents/README.md` for the index and instructions for adding new age
 
 ## MCP
 
-`.mcp.json` is checked in and read automatically by Claude Code. It ships empty; see
+`.mcp.json` is read automatically by Claude Code, but it is **not** committed. MCP entries
+point at absolute paths on one machine, so a checked-in copy is both broken for everyone
+else and a needless record of whoever set it up. Create your own; see
 `docs/guides/mcp.md` for ready-to-paste server configurations.
