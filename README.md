@@ -3,7 +3,6 @@
 > An interactive git lesson for people who have never run `git init` — and who now work
 > alongside AI coding agents that write code faster than they can read it.
 
-[![CI](https://github.com/org/repo/actions/workflows/ci.yml/badge.svg)](https://github.com/org/repo/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## What it is
@@ -45,20 +44,31 @@ npm run dev          # http://localhost:4173, serving src/ directly
 Or build the single-file version and open it from disk:
 
 ```bash
-npm run build        # writes dist/index.html
-open dist/index.html
+npm run build        # writes index.html
+open index.html
 ```
 
 ## Development
 
 ```bash
+npm run verify       # lint, build, and run every test — do this before pushing
 npm run dev          # dev server over src/, no build step
-npm run build        # inline everything into dist/
+npm run build        # inline everything into index.html
 npm test             # build, then unit + end-to-end tests
 npm run test:unit    # logic only, no browser
-npm run test:e2e     # headless Chrome against dist/index.html
+npm run test:e2e     # headless Chrome against index.html
 npm run lint         # syntax check the files Node cannot import
 ```
+
+There is no CI. `npm run verify` is the gate, and it runs locally in about twelve
+seconds. To have git enforce it for you:
+
+```bash
+bash scripts/setup-hooks.sh
+```
+
+That installs a pre-commit hook which rebuilds `index.html`, refuses the commit if it was
+stale, and runs the full suite.
 
 Edit files in `src/` and reload. The browser sources are plain classic scripts, so there is
 no bundler, no transpiler and no watch process.
@@ -90,42 +100,57 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how a keystroke becomes a q
 and [docs/design/mockups.html](docs/design/mockups.html) for the three design directions
 this was chosen from.
 
-## Deploying
+## Publishing it
 
-`dist/index.html` is a complete, self-contained page: one file, no server, no runtime
-build. It contains no relative or root-absolute asset paths, so it runs correctly at any
-URL — a domain root, a `/repo-name/` subpath, or straight off the filesystem. The only
-external request is the Google Fonts stylesheet, and the page falls back to system faces
-without it.
+`index.html` at the repo root **is** the site: one self-contained file, no server, no
+build step at runtime. It contains no relative or root-absolute asset paths, so it runs
+correctly at any URL — a domain root, a `/repo-name/` subpath, or straight off the
+filesystem. The only external request is the Google Fonts stylesheet, and the page falls
+back to system faces without it.
 
-`dist/artifact.html` is the same page as a body fragment, for hosts that supply their own
-document shell.
+It is committed on purpose. GitHub Pages serves this repo directly from the branch, so
+whatever `index.html` says is what your readers get.
 
-### GitHub Pages
+### Putting it on GitHub Pages
 
-`.github/workflows/pages.yml` builds and publishes on every push to `main`. To turn it on:
+```bash
+# once
+gh repo create <name> --public --source=. --remote=origin --push
+# or, without the gh CLI: create the repo on github.com, then
+#   git remote add origin https://github.com/<you>/<name>.git
+#   git push -u origin main
+```
 
-1. Push the repo to GitHub.
-2. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
-3. Push to `main`, or run the workflow by hand from the Actions tab.
+Then, in the repository: **Settings → Pages → Build and deployment → Source: Deploy from
+a branch**, branch `main`, folder `/ (root)`. Save. A minute later the lesson is live at
+`https://<you>.github.io/<name>/`.
 
-The site lands at `https://<user>.github.io/<repo>/`. The workflow runs the unit tests
-before it builds, so a broken lesson does not reach your testers.
+The repo must be **public** for Pages on the free tier. Private repos need a paid plan.
 
-Pages on a **private** repo needs a paid GitHub plan. A public repo works on the free tier
-— which is usually the right choice here anyway, since the whole thing is a teaching
-resource.
+### Updating it
+
+```bash
+npm run verify                 # lint, build, all 88 tests
+git add -A && git commit -m "..."
+git push
+```
+
+Pages redeploys on push. The only way to publish something broken is to skip
+`npm run verify` — which is what the pre-commit hook exists to prevent.
 
 ### Other ways to hand it to someone
 
-| Route | Good for | Cost of setup |
-|-------|----------|---------------|
-| GitHub Pages | A durable link you can keep updating | One workflow, already written |
-| Netlify / Vercel / Cloudflare Pages | Same, plus previews per branch | Point it at the repo, build `npm run build`, publish `dist` |
-| Send `dist/index.html` | One or two people, or no internet | Attach the file; they double-click it |
+| Route | Good for | Setup |
+|-------|----------|-------|
+| GitHub Pages | A durable link you keep updating | Push, then flip one setting |
+| Netlify / Vercel / Cloudflare Pages | Same, plus per-branch previews | Point at the repo; no build command needed, publish the root |
+| Send `index.html` | One or two people, or no internet | Attach the file; they double-click it |
 
-That last one is worth remembering: the built file works from `file://`, so it can go in an
-email, a Slack message, or a USB stick and still run in full.
+That last one is worth remembering: the file runs from `file://`, so it can go in an email
+or a Slack message and still work in full.
+
+`dist/artifact.html` is the same page as a body fragment, for hosts that supply their own
+document shell. It is generated, not committed.
 
 ## Documentation
 

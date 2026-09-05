@@ -130,12 +130,16 @@ for the end-to-end tests, whatever Chrome or Chromium is already installed.
 
 `npm run build` inlines every stylesheet and script into two outputs:
 
-- `dist/index.html` — a complete standalone page. Host it anywhere static, or open it from
-  disk.
+- `index.html`, at the repo root — a complete standalone page. This is the deployed site:
+  GitHub Pages serves it straight from the branch, so it is committed rather than built by
+  CI. Host it anywhere static, or open it from disk.
 - `dist/artifact.html` — the same page as a body fragment, for hosts that supply their own
-  document shell.
+  document shell. Generated, not committed.
 
-There is no server component, so there is nothing to operate.
+There is no server component and no build pipeline, so there is nothing to operate. The
+tradeoff is that a `src/` change is only published once someone rebuilds and commits the
+result; `npm run verify` and the pre-commit hook from `scripts/setup-hooks.sh` are what
+stop that being forgotten.
 
 ## Non-Functional Requirements
 

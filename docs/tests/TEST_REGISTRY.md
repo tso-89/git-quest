@@ -3,14 +3,15 @@
 > Integration and end-to-end tests are recorded here, along with anything they need to run.
 > Unit tests are not listed — their names are the documentation.
 
-Run everything with `npm test`. That builds `dist/` first, because the end-to-end tests
-load the built bundle rather than the sources.
+Run everything with `npm run verify` before pushing — that lints, builds and runs both
+suites. The end-to-end tests load the built `index.html` rather than the sources, so the
+build always runs first.
 
 ## End-to-end
 
 **File:** `tests/e2e/render.test.mjs`
 **Runner:** `node --test` driving headless Chrome
-**Under test:** `dist/index.html` — the built single-file page
+**Under test:** `index.html` — the built single-file page that GitHub Pages serves
 
 These are the only tests that exercise the DOM. Everything else runs the same modules in
 Node with no browser.
@@ -20,14 +21,15 @@ Node with no browser.
 | Requirement | Detail |
 |-------------|--------|
 | Browser | Chrome or Chromium. Looked up at `$CHROME_PATH`, then the standard macOS and Linux install paths. |
-| Build | `dist/index.html` must exist. `npm test` and `npm run test:e2e` build it first. |
+| Build | `index.html` must exist. `npm test`, `npm run test:e2e` and `npm run verify` build it first. |
 | Network | None. The page is loaded over `file://`; the Google Fonts request fails harmlessly. |
 | Fixtures | None. Each chapter seeds its own sandbox in code. |
 | Environment variables | `CHROME_PATH` — optional; only needed when Chrome is somewhere non-standard. |
 
 If no browser is found the whole file **skips** rather than fails, so a machine without
-Chrome still gets a green unit run. CI should set `CHROME_PATH` so the skip does not hide a
-regression.
+Chrome still gets a green unit run. There is no CI to catch that for you: if you are the
+one pushing, make sure Chrome is installed, or set `CHROME_PATH`, so the skip does not
+hide a regression from your readers.
 
 ### How they work
 

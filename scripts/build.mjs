@@ -2,8 +2,11 @@
  * build.mjs — inline every stylesheet and script into one file.
  *
  * Produces two artefacts from the same source:
- *   dist/index.html    a complete standalone page (GitHub Pages, or open it from disk)
- *   dist/artifact.html the same page as a body fragment, for publishing as an Artifact
+ *   index.html         the site. Committed, because GitHub Pages serves this
+ *                      repo straight from the branch — there is no CI step to
+ *                      build it. Rebuild and stage it whenever src/ changes.
+ *   dist/artifact.html the same page as a body fragment, for hosts that supply
+ *                      their own document shell. Generated, not committed.
  *
  * No bundler, no dependencies. `node scripts/build.mjs`.
  */
@@ -36,7 +39,7 @@ if (/<(link|script)[^>]+(href|src)="(css|js)\//.test(html)) {
 }
 
 mkdirSync(dist, { recursive: true });
-writeFileSync(join(dist, 'index.html'), html);
+writeFileSync(join(root, 'index.html'), html);
 
 // The Artifact host supplies <!doctype>, <head> and <body>, so hand it the
 // fragment: everything the head needs plus the body's own content.
@@ -50,5 +53,5 @@ const fragment = headInner
 writeFileSync(join(dist, 'artifact.html'), fragment);
 
 const kb = (s) => `${(Buffer.byteLength(s, 'utf8') / 1024).toFixed(1)} kB`;
-console.log(`dist/index.html    ${kb(html)}`);
+console.log(`index.html         ${kb(html)}   <- the published site, commit this`);
 console.log(`dist/artifact.html ${kb(fragment)}`);

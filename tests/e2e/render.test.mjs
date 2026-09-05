@@ -14,7 +14,7 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const bundle = join(root, 'dist', 'index.html');
+const bundle = join(root, 'index.html');
 
 const CHROME_CANDIDATES = [
   process.env.CHROME_PATH,
