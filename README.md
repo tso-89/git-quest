@@ -16,16 +16,16 @@ Nothing is installed. Nothing touches the learner's machine. It is one HTML file
 
 | # | Chapter | What they do |
 |---|---------|--------------|
-| 00 | The twenty-second undo | Destroy a file, then get it back |
+| 00 | Break it, then get it back | Look around, destroy a file, then restore it |
 | 01 | A name you will still want in five years | Pick a username that passes GitHub's rules; open the account |
 | 02 | A folder with a memory | `git init` a folder and make the first commit |
 | 03 | Public, private, and the key you cannot unsee | Sort ten files into commit / keep-out, then write a `.gitignore` |
 | 04 | Getting it onto GitHub | Create the remote, connect it, push |
 | 05 | The loop you will run all day | Split two changes into two commits and push |
 | 06 | The same loop, without typing | Do it again in a simulated GitHub Desktop and VS Code |
-| 07 | Branches, and undoing anything | Branch, merge, revert, then find it in the reflog |
+| 07 | Branch, merge, push — and undo anything | Branch, merge, push, revert, then find it in the reflog |
 | 08 | When someone else has been editing | Resolve a real merge conflict by hand |
-| 09 | Git when an agent is typing | Catch an agent doing something its summary omitted |
+| 09 | Git when an agent is typing | Check the remote, then catch an agent doing something its summary omitted |
 | 10 | Write the rules file | Generate `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` and commit it |
 
 Chapters 09 and 10 personalise around the agents the learner picks: **Claude Code**,

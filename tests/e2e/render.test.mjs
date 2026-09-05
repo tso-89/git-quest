@@ -99,7 +99,7 @@ test('the page boots and renders chapter 00 at rest', { skip }, () => {
       === Node.DOCUMENT_POSITION_FOLLOWING);
   `);
 
-  assert.equal(out.title, 'The twenty-second undo');
+  assert.equal(out.title, 'Break it, then get it back');
   assert.equal(out.steps, '5');
   assert.equal(out.nodes, '11', 'one map node per chapter');
   assert.equal(out.prompt, 'true');
