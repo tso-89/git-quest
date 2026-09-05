@@ -286,7 +286,7 @@
         eng.cwd = root;
         eng.writeFile(root + '/README.md', README);
         eng.writeFile(root + '/app.js', 'console.log("hello");');
-        eng.writeFile(root + '/secrets.env', 'STRIPE_KEY=sk_live_51H8xQ2eZvKYlo2C\nDB_PASSWORD=hunter2');
+        eng.writeFile(root + '/secrets.env', 'STRIPE_KEY=sk_live_EXAMPLE_do_not_use_1234\nDB_PASSWORD=hunter2');
         eng.writeFile(root + '/.DS_Store', 'macOS junk');
         eng.stage('README.md');
         eng.stage('app.js');
@@ -785,7 +785,7 @@
         eng.writeFile(root + '/.gitignore', 'node_modules/\n.DS_Store\nsecrets.env');
         eng.writeFile(root + '/notes.md', '# Notes\n\n- Read Pro Git chapters 1-3');
         eng.writeFile(root + '/app.js', 'const KEY = process.env.STRIPE_KEY;\n\nfunction charge(amount) {\n  return { amount: amount, key: KEY };\n}\n');
-        eng.writeFile(root + '/secrets.env', 'STRIPE_KEY=sk_live_51H8xQ2eZvKYlo2C');
+        eng.writeFile(root + '/secrets.env', 'STRIPE_KEY=sk_live_EXAMPLE_do_not_use_1234');
         eng.stage('README.md');
         eng.stage('.gitignore');
         eng.stage('notes.md');
